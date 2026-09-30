@@ -1,0 +1,99 @@
+<!--
+  Hero.
+
+  `overflow-hidden` es imprescindible: el titular mide más que el viewport a
+  propósito — que sangre por los lados es la decisión de diseño, no un
+  accidente— y sin él aparecería scroll horizontal.
+
+  Nada de márgenes en el elemento raíz: ScrollTrigger lo envuelve en un
+  `pin-spacer` al activar el `pin`, y un margen ahí produce un salto visible
+  justo cuando la sección se fija.
+-->
+<section
+  #root
+  class="relative flex h-screen items-center justify-center overflow-hidden"
+>
+  <!--
+    Eyebrow, esquina superior izquierda.
+
+    Es el ÚNICO texto del hero además del indicador de scroll, y es una
+    decisión, no un descuido.
+
+    El titular ocupa ~110 % del ancho y ~96 % del alto de la pantalla: no queda
+    ninguna zona libre donde poner texto. Se probó un copy descriptivo a la
+    derecha, primero a media altura y luego arriba, y en los dos sitios caía
+    sobre las letras negras con contraste 1:1 — ilegible. La referencia puede
+    permitírselo porque su titular va en dos líneas y deja aire lateral; con
+    una palabra de cinco letras ese hueco no existe.
+
+    Así que el hero dice marca, producto y "hay más abajo". Lo descriptivo vive
+    en la sección Origen, que es su sitio. El eyebrow se salva porque cae sobre
+    el fondo hueso, a la izquierda de la B.
+  -->
+  <p
+    data-anim="intro"
+    class="absolute left-6 top-6 z-20 font-hand text-2xl text-brand sm:left-10 sm:text-3xl"
+  >
+    Salsas de ají, hechas a mano
+  </p>
+
+  <!--
+    Capa 1 — el titular, al fondo.
+
+    El tamaño va en `vw` y no en píxeles para que la proporción respecto a la
+    pantalla sea la misma en cualquier ancho.
+
+    42vw, no 28vw. Con 28vw la palabra cabía entera en el viewport y el efecto
+    de la referencia —el titular cortado por los dos lados— no se producía en
+    NINGÚN tamaño de pantalla, porque al escalar con `vw` la proporción
+    texto/viewport es constante: agrandar la ventana no lo arregla.
+
+    El número se ajustó midiendo, no estimando: con 42vw el titular medía 1467
+    px en un viewport de 1521 — llenaba casi todo pero seguía sin cortarse.
+    48vw lo desborda unos 75 px por lado, que es cuando el efecto se lee.
+
+    El `overflow-hidden` del <section> es lo que hace esto seguro: recorta el
+    desbordamiento sin generar scroll horizontal.
+  -->
+  <h1
+    data-anim="title"
+    class="text-worn pointer-events-none select-none whitespace-nowrap text-center text-[48vw] leading-none text-ink"
+  >
+    Bravo
+  </h1>
+
+  <!--
+    Capa 2 — la botella, delante del titular y tapándolo.
+
+    Este solapamiento ES el efecto: el producto rompe el plano del texto. Si la
+    botella se colocara al lado en vez de encima, la composición sería la de
+    cualquier plantilla.
+  -->
+  <div
+    data-anim="bottle"
+    class="pointer-events-none absolute top-1/2 h-[70vh] -translate-y-1/2"
+  >
+    <app-bottle fill="var(--color-heat-4)" labelText="BRAVO" />
+  </div>
+
+  <!--
+    Indicador de scroll. Existe porque la sección está pineada: sin él, alguien
+    podría creer que la página no avanza. Un `pin` sin señal de que hay más
+    abajo es una trampa de usabilidad.
+  -->
+  <div
+    data-anim="scroll-hint"
+    class="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2"
+  >
+    <span class="font-hand text-xl">Baja</span>
+    <svg width="20" height="28" viewBox="0 0 20 28" fill="none" aria-hidden="true">
+      <path
+        d="M10 2 L10 24 M3 17 L10 24 L17 17"
+        stroke="var(--color-ink)"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </div>
+</section>

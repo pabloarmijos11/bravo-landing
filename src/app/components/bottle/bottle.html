@@ -1,0 +1,118 @@
+<!--
+  Botella de salsa.
+
+  Proporciones: viewBox 200×480 (5:12). El cuerpo ocupa de x=35 a x=165, o sea
+  el 65 % del ancho. Un primer intento con el cuerpo en el 30 % central salía
+  como un tubo de ensayo — en una botella de picante el cuerpo es ancho y el
+  cuello estrecho, y ese contraste es lo que la hace reconocible de un vistazo.
+
+  `preserveAspectRatio` por defecto ("xMidYMid meet") conserva la proporción:
+  la botella nunca se deforma al cambiar el ancho del contenedor.
+-->
+<svg
+  viewBox="0 0 200 480"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  class="h-full w-full"
+  role="img"
+  [attr.aria-label]="'Botella de salsa ' + labelText()"
+>
+  <defs>
+    <!--
+      El contenido se recorta con la silueta del cristal, así la salsa nunca se
+      sale del vidrio por mucho que se anime su altura. Lo necesita la fase 4,
+      donde el nivel de llenado se anima con el scroll.
+    -->
+    <clipPath id="bottle-glass-clip">
+      <path
+        d="M78 62 L78 118 Q78 130 68 140 Q38 165 35 205 L35 435
+           Q35 462 62 462 L138 462 Q165 462 165 435 L165 205
+           Q162 165 132 140 Q122 130 122 118 L122 62 Z"
+      />
+    </clipPath>
+
+    <!-- Reflejo vertical. Un brillo, no un degradado decorativo. -->
+    <linearGradient id="bottle-shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.38" />
+      <stop offset="50%" stop-color="#fff" stop-opacity="0.07" />
+      <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Contenido: se pinta primero y el cristal lo recorta. -->
+  <g clip-path="url(#bottle-glass-clip)">
+    <rect
+      data-part="sauce"
+      x="25"
+      y="95"
+      width="150"
+      height="380"
+      [attr.fill]="'var(--bottle-fill)'"
+    />
+    <!-- Sombra en la base: da volumen sin recurrir a filtros caros. -->
+    <ellipse data-part="sauce-shadow" cx="100" cy="462" rx="70" ry="20" fill="#000" opacity="0.2" />
+  </g>
+
+  <!-- Contorno del cristal. `data-anim="outline"` para DrawSVG en la fase 5. -->
+  <path
+    data-part="glass"
+    data-anim="outline"
+    d="M78 62 L78 118 Q78 130 68 140 Q38 165 35 205 L35 435
+       Q35 462 62 462 L138 462 Q165 462 165 435 L165 205
+       Q162 165 132 140 Q122 130 122 118 L122 62 Z"
+    stroke="var(--color-ink)"
+    stroke-width="7"
+    stroke-linejoin="round"
+  />
+
+  <!-- Reflejo: encima del contenido, debajo de la etiqueta. -->
+  <rect
+    data-part="shine"
+    x="50"
+    y="195"
+    width="16"
+    height="230"
+    rx="8"
+    fill="url(#bottle-shine)"
+  />
+
+  <!-- Tapa. Del mismo tono que el contenido, para que la salsa se lea de lejos. -->
+  <g data-part="cap">
+    <rect x="68" y="8" width="64" height="56" rx="7" [attr.fill]="'var(--bottle-fill)'" />
+    <rect
+      x="68"
+      y="8"
+      width="64"
+      height="56"
+      rx="7"
+      stroke="var(--color-ink)"
+      stroke-width="7"
+    />
+    <!-- Estrías de la rosca: tres líneas bastan para leerse como tapa. -->
+    <path d="M82 22 L82 50 M100 22 L100 50 M118 22 L118 50"
+          stroke="var(--color-ink)" stroke-width="4" opacity="0.4" />
+  </g>
+
+  <!-- Etiqueta, en el color de fondo de la página para que recorte el contenido. -->
+  <g data-part="label">
+    <rect x="44" y="250" width="112" height="112" rx="5" fill="var(--color-bone)" />
+    <rect
+      x="44"
+      y="250"
+      width="112"
+      height="112"
+      rx="5"
+      stroke="var(--color-ink)"
+      stroke-width="6"
+    />
+    <text
+      x="100"
+      y="318"
+      text-anchor="middle"
+      fill="var(--color-ink)"
+      style="font-family: var(--font-display); font-size: 34px; letter-spacing: -0.02em"
+    >
+      {{ labelText() }}
+    </text>
+  </g>
+</svg>

@@ -1,23 +1,15 @@
-<!--
-  Página temporal de verificación del sistema de diseño (fase 1).
-  Se reemplaza por las siete secciones en la fase 3.
+<!-- Sección 1 — hero. -->
+<app-hero />
 
-  Su único propósito es que los tokens y las tipografías se vean con los ojos
-  antes de construir nada encima: un token mal definido es mucho más barato de
-  arreglar aquí que en siete componentes.
+<!--
+  TEMPORAL — página de verificación del sistema de diseño (fase 1).
+
+  Va cayendo a medida que entran las secciones reales. Mientras tanto cumple
+  una función concreta: dar recorrido de scroll por debajo del hero, que su
+  `pin` necesita para poder soltarse.
 -->
 
 <main class="mx-auto max-w-5xl px-6 py-16">
-  <!-- Los tres niveles tipográficos, juntos y a escala real -->
-  <header class="mb-20">
-    <p class="font-hand text-3xl text-brand">Algo sobre nosotros</p>
-    <h1 class="text-worn mt-2 text-7xl sm:text-8xl lg:text-9xl">Bravo</h1>
-    <p class="mt-6 max-w-prose text-lg leading-relaxed">
-      Salsas picantes hechas con ajíes ecuatorianos. Cinco niveles, del criollo
-      al extremo. Este texto existe para comprobar que Outfit respira bien en
-      párrafo largo y que el grano del fondo no le come la legibilidad.
-    </p>
-  </header>
 
   <!-- Colores base -->
   <section class="mb-16">
@@ -67,49 +59,6 @@
       Si alguno de los cinco se lee mal, el token está mal — no el diseño.
       Comprobar con <code>py -3 scripts/contraste.py</code>.
     </p>
-  </section>
-
-  <!--
-    TEMPORAL — verificación del patrón de animación (fase 2).
-    Se borra entera, junto con el componente app-motion-probe, en la fase 3.
-  -->
-  <section class="mb-20 border-t border-ink/15 pt-10">
-    <h2 class="mb-2 text-2xl">Sonda de animación</h2>
-    <p class="mb-6 max-w-prose text-sm">
-      Las dos sondas entran por lados opuestos: si el scope de los selectores
-      no funcionara, la segunda sobrescribiría a la primera y ambas entrarían
-      del mismo lado. El contador debe marcar 2 con las sondas montadas y
-      volver a 0 al desmontarlas.
-    </p>
-
-    <div class="mb-6 flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        class="rounded bg-brand px-4 py-2 text-bone"
-        (click)="toggleProbes()"
-      >
-        {{ probesVisible() ? 'Desmontar sondas' : 'Montar sondas' }}
-      </button>
-
-      <button
-        type="button"
-        class="rounded border border-ink px-4 py-2"
-        (click)="countTriggers()"
-      >
-        Contar ScrollTriggers
-      </button>
-
-      @if (triggerCount() !== null) {
-        <span class="font-hand text-2xl">
-          ScrollTriggers vivos: {{ triggerCount() }}
-        </span>
-      }
-    </div>
-
-    @if (probesVisible()) {
-      <app-motion-probe label="Sonda A — entra por la izquierda" [direction]="-1" />
-      <app-motion-probe label="Sonda B — entra por la derecha" [direction]="1" />
-    }
   </section>
 
   <!--

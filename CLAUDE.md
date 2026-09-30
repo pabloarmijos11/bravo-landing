@@ -292,6 +292,24 @@ y Outfit, todas de Google Fonts. La textura desgastada se recrea con una máscar
 
 ## Decisiones registradas
 
+**El hero no lleva copy descriptivo.** Solo eyebrow, titular, botella e
+indicador de scroll. No es un olvido: el titular ocupa ~110 % del ancho y ~96 %
+del alto de la pantalla, así que no queda ninguna zona libre. Se probó un copy a
+la derecha, primero a media altura y luego en la franja superior, y en los dos
+sitios caía sobre las letras negras con contraste 1:1. La referencia puede
+permitírselo porque su titular va en dos líneas y deja aire lateral; con una
+palabra de cinco letras ese hueco no existe. Lo descriptivo vive en la sección
+Origen. **Si algún día el hero gana una segunda línea de titular, este es el
+punto a reabrir.**
+
+**El titular del hero va a `48vw`, y el número importa.** Con `28vw` la palabra
+cabía entera y el efecto de la referencia —el titular cortado por los lados— no
+se producía en **ningún** tamaño de pantalla: al escalar con `vw`, la proporción
+texto/viewport es constante, así que agrandar la ventana nunca lo arregla. Medido:
+`42vw` daba 1467 px en un viewport de 1521 (aún sin cortar); `48vw` da 1677 px, con
+78 px de desborde por lado. El `overflow-hidden` del `<section>` es lo que hace que
+eso no genere scroll horizontal — sin él, el hero rompe la página entera.
+
 **Sin modo oscuro, a propósito.** La estética depende del fondo hueso; un tema
 oscuro duplicaría todo el sistema de color sin aportar al objetivo, que es visual.
 Es una diferencia consciente respecto a `altura-landing`, que sí lo tiene.
@@ -370,7 +388,12 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       (4) el scope aísla los selectores — la sonda A llegó a opacidad 1
           mientras la B seguía intacta en 0.
       La sonda se borra en la fase 3.
-- [ ] **Fase 3** — hero
+- [x] **Fase 3** — hero con `pin` + `scrub`, y componente `app-bottle` (una sola
+      botella SVG; el color entra por `[fill]`, así que añadir una salsa no añade
+      un archivo). Tres capas a distinta velocidad. Verificado en navegador a
+      1521 px: el titular sangra 78 px por lado sin generar scroll horizontal, y
+      el `scrub` responde en ambos sentidos.
+      **Pendiente: verificación en móvil (375 px).**
 - [ ] **Fase 4** — escala de picante
 - [ ] **Fase 5** — origen, proceso, CTA, footer
 - [ ] **Fase 6** — carrusel de productos
