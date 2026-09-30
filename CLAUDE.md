@@ -168,10 +168,45 @@ verificada contra el paquete en `node_modules`:
 **`Draggable` con `inertia: true` no hace nada si `InertiaPlugin` no está
 registrado.** Falla en silencio, sin error ni aviso.
 
-### `scrub: 0.5`, no `scrub: true`
+### `scrub` numérico, no `scrub: true`
 
-El número añade medio segundo de inercia: la animación *persigue* al scroll en vez
-de pegarse a él. Es la diferencia entre un efecto mecánico y uno con peso.
+El número añade inercia: la animación *persigue* al scroll en vez de pegarse a él, y
+eso le da peso. Es la diferencia entre un efecto mecánico y uno con masa.
+
+**Pero el número se pasa de frenada muy pronto.** En el hero se empezó con `0.5` y
+Pablo lo describió como «trabado». Medio segundo de retraso ya se lee como que la
+página no responde. Valor actual: **`0.3`**.
+
+### Los dos diales de la sensación de scroll
+
+Cuando algo con `pin` se sienta pesado, el problema casi nunca es el rendimiento.
+Medido en el hero: **59 FPS sostenidos** (17 ms entre frames, p90 y peor caso
+también 17 ms) con la versión que se sentía trabada. Los responsables son otros dos:
+
+| Dial | Qué hace | Si se pasa |
+|---|---|---|
+| `end: '+=N%'` | cuánto scroll transcurre con la página detenida | se siente atascada: giras la rueda y no avanza |
+| `scrub: N` | segundos de inercia | se lee como lag, no como peso |
+
+Valores actuales del hero: `end: '+=70%'`, `scrub: 0.3`.
+
+### Cómo medir FPS sin engañarse
+
+**Contar frames de `requestAnimationFrame` sobre un intervalo largo NO sirve** con
+scroll automatizado: el navegador pausa `rAF` cuando la pestaña está inactiva entre
+acciones, así que se mide el tiempo muerto. Dio 1,3 FPS en una página que iba a 59.
+
+Lo correcto es medir el **delta entre frames consecutivos** y quedarse con los que
+ocurren en ráfaga (descartando los huecos > 400 ms):
+
+```js
+window.__d = [];
+let last = performance.now();
+const tick = (t) => { window.__d.push(Math.round(t - last)); last = t; requestAnimationFrame(tick); };
+requestAnimationFrame(tick);
+// ...hacer scroll real...
+// mediana de window.__d.filter(x => x > 0 && x < 400)
+```
 
 ### Staggers cortos
 
@@ -301,6 +336,12 @@ permitírselo porque su titular va en dos líneas y deja aire lateral; con una
 palabra de cinco letras ese hueco no existe. Lo descriptivo vive en la sección
 Origen. **Si algún día el hero gana una segunda línea de titular, este es el
 punto a reabrir.**
+
+**Una sección con `pin` necesita fondo opaco propio (`bg-bone`).** Al pinearse pasa a
+`position: fixed` y deja de ocupar sitio en el flujo: sin fondo, el contenido que
+viene detrás se ve a través de ella. En el hero se manifestó como que «los colores de
+abajo se ponen detrás de la botella». Aplica a **todas** las secciones pineadas que
+vengan — la escala de picante de la fase 4 incluida.
 
 **El titular del hero va a `48vw`, y el número importa.** Con `28vw` la palabra
 cabía entera y el efecto de la referencia —el titular cortado por los lados— no

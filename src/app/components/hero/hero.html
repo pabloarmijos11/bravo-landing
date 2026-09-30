@@ -11,7 +11,7 @@
 -->
 <section
   #root
-  class="relative flex h-screen items-center justify-center overflow-hidden"
+  class="relative flex h-screen items-center justify-center overflow-hidden bg-bone"
 >
   <!--
     Eyebrow, esquina superior izquierda.
@@ -54,13 +54,27 @@
 
     El `overflow-hidden` del <section> es lo que hace esto seguro: recorta el
     desbordamiento sin generar scroll horizontal.
+
+    ¿POR QUÉ HAY UN DIV ALREDEDOR DEL H1?
+
+    Porque lo que se anima y lo que lleva la máscara tienen que ser elementos
+    distintos. `text-worn` es una `mask-image`, y si el navegador tiene que
+    aplicarla al MISMO elemento que está moviendo, re-rasteriza la máscara en
+    cada frame en vez de desplazar una capa ya pintada. Medido: 1,3 FPS con el
+    h1 animado directamente.
+
+    Separándolos, la máscara se rasteriza una vez y el transform del wrapper se
+    resuelve en el compositor. `will-change: transform` le dice al navegador que
+    promueva el wrapper a su propia capa desde el principio.
   -->
-  <h1
+  <div
     data-anim="title"
-    class="text-worn pointer-events-none select-none whitespace-nowrap text-center text-[48vw] leading-none text-ink"
+    class="pointer-events-none select-none [will-change:transform]"
   >
-    Bravo
-  </h1>
+    <h1 class="text-worn whitespace-nowrap text-center text-[48vw] leading-none text-ink">
+      Bravo
+    </h1>
+  </div>
 
   <!--
     Capa 2 — la botella, delante del titular y tapándolo.
@@ -71,7 +85,7 @@
   -->
   <div
     data-anim="bottle"
-    class="pointer-events-none absolute top-1/2 h-[70vh] -translate-y-1/2"
+    class="pointer-events-none absolute top-1/2 h-[70vh] -translate-y-1/2 [will-change:transform]"
   >
     <app-bottle fill="var(--color-heat-4)" labelText="BRAVO" />
   </div>

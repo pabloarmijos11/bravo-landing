@@ -34,13 +34,23 @@ export class Hero {
           scrollTrigger: {
             trigger: this.root().nativeElement,
             start: 'top top',
-            // Una pantalla entera de scroll para recorrer la animación.
-            end: '+=100%',
+
+            // ESTOS DOS NÚMEROS SON LOS QUE DECIDEN SI SE SIENTE BIEN.
+            // No son de rendimiento: el scroll va a 59 FPS con cualquiera de
+            // ellos. Son de percepción, y conviene tocarlos juntos.
+
+            // Cuánto scroll se pasa con la página visualmente detenida. Con
+            // '+=100%' era una pantalla entera y se sentía atascado: el usuario
+            // gira la rueda y la página no avanza. 70% mantiene el efecto y
+            // acorta la espera.
+            end: '+=70%',
             pin: true,
-            // 0.5 y no `true`: medio segundo de inercia hace que la animación
-            // persiga al scroll en vez de pegarse a él. Es la diferencia entre
-            // un efecto mecánico y uno con peso.
-            scrub: 0.5,
+
+            // Inercia: la animación persigue al scroll en vez de pegarse a él,
+            // y eso le da peso. Pero 0.5 s es suficiente retraso para que se
+            // lea como que no responde. 0.3 conserva la sensación de masa sin
+            // que parezca lag.
+            scrub: 0.3,
           },
         });
 
