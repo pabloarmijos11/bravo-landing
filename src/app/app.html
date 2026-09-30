@@ -1,0 +1,90 @@
+<!--
+  Página temporal de verificación del sistema de diseño (fase 1).
+  Se reemplaza por las siete secciones en la fase 3.
+
+  Su único propósito es que los tokens y las tipografías se vean con los ojos
+  antes de construir nada encima: un token mal definido es mucho más barato de
+  arreglar aquí que en siete componentes.
+-->
+
+<main class="mx-auto max-w-5xl px-6 py-16">
+  <!-- Los tres niveles tipográficos, juntos y a escala real -->
+  <header class="mb-20">
+    <p class="font-hand text-3xl text-brand">Algo sobre nosotros</p>
+    <h1 class="text-worn mt-2 text-7xl sm:text-8xl lg:text-9xl">Bravo</h1>
+    <p class="mt-6 max-w-prose text-lg leading-relaxed">
+      Salsas picantes hechas con ajíes ecuatorianos. Cinco niveles, del criollo
+      al extremo. Este texto existe para comprobar que Outfit respira bien en
+      párrafo largo y que el grano del fondo no le come la legibilidad.
+    </p>
+  </header>
+
+  <!-- Colores base -->
+  <section class="mb-16">
+    <h2 class="mb-4 text-2xl">Base</h2>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="rounded border border-ink/20 bg-bone p-6">
+        <span class="text-ink">bone · ink encima</span>
+      </div>
+      <div class="rounded bg-ink p-6">
+        <span class="text-bone">ink · bone encima</span>
+      </div>
+      <div class="rounded bg-brand p-6">
+        <span class="text-bone">brand · bone encima</span>
+      </div>
+    </div>
+  </section>
+
+  <!--
+    La escala de picante.
+
+    Cada bloque usa SU token de texto emparejado (heat-N-ink), nunca uno
+    elegido a ojo. El cambio de texto oscuro a claro ocurre entre heat-3 y
+    heat-4 — se ve aquí de un vistazo, y es el motivo de que la fase 4 tenga
+    que cruzar el color del texto a mitad de la animación.
+  -->
+  <section class="mb-16">
+    <h2 class="mb-4 text-2xl">Escala de picante</h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <!--
+        Sin `opacity-*` en ningún texto: una utilidad de opacidad mezcla el
+        color del texto con el del fondo y tira abajo el ratio real, mientras
+        que scripts/contraste.py mide colores sólidos. El texto quedaría por
+        debajo de AA aunque el script diga que pasa. Se vio aquí mismo, sobre
+        heat-3 y heat-4.
+      -->
+      @for (level of heatLevels; track level.pepper) {
+        <article class="rounded p-5" [class]="level.classes">
+          <p class="font-hand text-2xl">{{ level.pepper }}</p>
+          <p class="mt-1 text-sm">{{ level.scoville }}</p>
+          <p class="mt-4 text-xs uppercase tracking-widest">
+            {{ level.classes }}
+          </p>
+        </article>
+      }
+    </div>
+    <p class="mt-3 text-sm opacity-70">
+      Si alguno de los cinco se lee mal, el token está mal — no el diseño.
+      Comprobar con <code>py -3 scripts/contraste.py</code>.
+    </p>
+  </section>
+
+  <!--
+    Titular con y sin textura, uno encima del otro.
+    El nivel de desgaste se eligió comparando cuatro variantes en paralelo;
+    ver la tabla de overrides en design-system/bravo/MASTER.md.
+  -->
+  <section>
+    <h2 class="mb-6 text-2xl">Textura del titular</h2>
+    <div class="space-y-6" style="font-family: var(--font-display)">
+      <div>
+        <p class="mb-1 font-body text-xs uppercase tracking-widest">Sin textura</p>
+        <p class="text-7xl uppercase">Bravo picante</p>
+      </div>
+      <div>
+        <p class="mb-1 font-body text-xs uppercase tracking-widest">Con textura</p>
+        <p class="text-worn text-7xl uppercase">Bravo picante</p>
+      </div>
+    </div>
+  </section>
+</main>

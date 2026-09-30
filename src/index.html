@@ -1,11 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>BravoLanding</title>
+  <title>Bravo — Salsas picantes artesanales</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description"
+        content="Bravo: salsas picantes artesanales hechas con ajíes ecuatorianos. Cinco niveles, del criollo al extremo.">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!--
+    Tipografías: los tres niveles del sistema de diseño.
+    Anton (titulares) · Caveat (eyebrows) · Outfit (cuerpo)
+
+    `preconnect` a los dos dominios, no solo a uno: fonts.googleapis.com sirve
+    el CSS y fonts.gstatic.com los ficheros de fuente. Sin el segundo, el
+    navegador abre la conexión al gstatic solo después de parsear el CSS.
+    `crossorigin` es obligatorio en ese segundo preconnect o el navegador lo
+    descarta en silencio.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@400..700&family=Outfit:wght@100..900&display=swap">
 </head>
 <body>
   <app-root></app-root>

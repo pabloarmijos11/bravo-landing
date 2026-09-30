@@ -1,3 +1,132 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Sistema de diseno de Bravo
+   ---------------------------------------------------------------------------
+   Los tokens se definen aqui con @theme, que es el modelo de Tailwind v4.
+   NO existe tailwind.config.js a proposito: eso es v3.
+
+   Regla: en los componentes solo se usan utilidades derivadas de estos tokens
+   (bg-bone, text-ink, bg-heat-3...). Nunca un hex crudo ni una utilidad de
+   color de Tailwind de fabrica (bg-red-600 esta prohibido).
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* --- Base: tres colores, como la referencia ---------------------------- */
+  --color-bone: #edE9df;   /* fondo de pagina */
+  --color-ink: #1a1919;    /* texto y titulares sobre bone */
+  --color-brand: #c4231f;  /* rojo de marca */
+
+  /* --- Escala de picante -------------------------------------------------
+     Cada nivel va emparejado con el color de texto que SI contrasta encima.
+     El punto de cambio esta entre heat-3 y heat-4; verificado por calculo en
+     scripts/contraste.py, no elegido a ojo. Usar el texto contrario al que
+     dice el token rompe WCAG (hasta 1.06:1 en heat-5).
+  ------------------------------------------------------------------------ */
+  --color-heat-1: #4e9b47;      /* aji criollo   */
+  --color-heat-1-ink: #1a1919;
+  --color-heat-2: #e8b31f;      /* aji amarillo  */
+  --color-heat-2-ink: #1a1919;
+  --color-heat-3: #e2701a;      /* rocoto        */
+  --color-heat-3-ink: #1a1919;
+  --color-heat-4: #c4231f;      /* habanero      */
+  --color-heat-4-ink: #ede9df;
+  --color-heat-5: #1a1010;      /* el extremo    */
+  --color-heat-5-ink: #ede9df;
+
+  /* --- Tipografia: tres niveles con roles opuestos ------------------------
+     El contraste entre los tres ES la estetica. Sustituyen a las fuentes de
+     pago de la referencia (Veneer, Monday, Gellix).
+  ------------------------------------------------------------------------ */
+  --font-display: 'Anton', 'Arial Narrow', sans-serif;      /* titulares   */
+  --font-hand: 'Caveat', 'Comic Sans MS', cursive;          /* eyebrows    */
+  --font-body: 'Outfit', ui-sans-serif, system-ui, sans-serif; /* cuerpo   */
+}
+
+/* ---------------------------------------------------------------------------
+   Grano de papel
+   ---------------------------------------------------------------------------
+   El fondo nunca es un color plano: lleva una textura sutil. Es la decision
+   mas barata que mas aleja el resultado de "plantilla".
+
+   Va como SVG inline (feTurbulence) en data URI: cero peticiones de red, cero
+   archivos, y escala a cualquier tamano sin pixelarse.
+--------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    /* Evita que el pin de ScrollTrigger pelee con el scroll suave del
+       navegador. GSAP controla el scroll; el navegador no debe interpolar. */
+    scroll-behavior: auto;
+  }
+
+  body {
+    background-color: var(--color-bone);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    /* La textura se pinta sobre el color de fondo, no lo sustituye. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E");
+  }
+
+  /* Los titulares nunca llevan el tracking por defecto de una condensada:
+     Anton ya viene muy apretada y a tamano grande necesita aire negativo. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 0.88;
+    text-transform: uppercase;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilidades propias
+--------------------------------------------------------------------------- */
+
+@utility text-worn {
+  /* Textura desgastada del titular: sustituye a la fuente grunge de pago
+     (Veneer) de la referencia. Recorta un ruido sobre el texto con
+     `mask-image`, de modo que el color lo sigue poniendo `color` y el token
+     semantico sigue mandando.
+
+     Los tres numeros que gobiernan el efecto. Se calibraron en el navegador
+     comparando cuatro variantes en paralelo, no a ojo de una en una:
+
+     - `baseFrequency` 0.16 -> motas pequenas y dispersas. A 0.6 el resultado
+       parecia ruido de television; a 0.08 las manchas eran tan grandes que la
+       letra parecia corroida en vez de desgastada.
+     - `feColorMatrix` en el canal alfa: alpha = -13 * ruido + 11.3. Recorta
+       solo donde el ruido supera ~0.87, la cola muy alta de la distribucion,
+       asi que la letra queda practicamente solida y el desgaste solo se nota
+       de cerca. ES EL NUMERO SENSIBLE: bajar la pendiente come letra muy
+       rapido. Con -7/5.6 ya habia demasiado blanco; con -5/3.9 se comia media
+       letra.
+     - `mask-size` 420px -> la mancha no se repite dentro de una misma palabra;
+       con 240px el patron se notaba como azulejo. */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 420px 420px;
+  mask-size: 420px 420px;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion
+   ---------------------------------------------------------------------------
+   Esta es la red de seguridad del CSS. La de verdad vive en JS, con
+   gsap.matchMedia() (ver src/app/animations/motion-scope.ts): GSAP anima con
+   estilos inline, y un `transition: none` de CSS no detiene un tween.
+
+   Regla: con reduce, el contenido se ve en su estado FINAL y legible. Nunca
+   oculto, nunca a medio camino.
+--------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,59 +1,101 @@
-# BravoLanding
+# Bravo — landing de salsas picantes
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
+Landing page de una sola página para **Bravo**, una marca **ficticia** de salsas
+picantes artesanales hechas con ajíes ecuatorianos. No es un producto real y no
+hay nada que comprar.
 
-## Development server
+Es un proyecto de práctica. Su objetivo es aprender **animación de scroll con
+GSAP** (`ScrollTrigger` con `pin` y `scrub`) y trabajar el diseño visual con más
+ambición que en proyectos anteriores.
 
-To start a local development server, run:
+![Angular](https://img.shields.io/badge/Angular-21.2-dd0031)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-4.1-38bdf8)
+![GSAP](https://img.shields.io/badge/GSAP-3.15-88ce02)
 
-```bash
-ng serve
-```
+---
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Requisitos
 
-## Code scaffolding
+- Node 24.14.1 o superior
+- npm 11.11.0 o superior
+- Python 3 (opcional, solo para el script de contraste)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+## Cómo ejecutarlo
 
 ```bash
-ng build
+npm install
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+La aplicación queda en `http://localhost:4200/`.
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Para el build de producción:
 
 ```bash
-ng test
+npm run build
 ```
 
-## Running end-to-end tests
+La salida va a `dist/bravo-landing/`.
 
-For end-to-end (e2e) testing, run:
+## Verificar la paleta
+
+El proyecto no confía en el ojo para el contraste. Los pares de color se calculan:
 
 ```bash
-ng e2e
+py -3 scripts/contraste.py
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+En Windows hay que invocar Python con `py -3`: `python` y `python3` los intercepta
+el alias de ejecución de la Microsoft Store.
 
-## Additional Resources
+## Estructura
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```
+bravo-landing/
+├─ CLAUDE.md                  convenciones y reglas del proyecto
+├─ design-system/bravo/
+│  └─ MASTER.md               sistema de diseño: color, tipografía, motion
+├─ scripts/
+│  └─ contraste.py            verificación WCAG de la paleta
+└─ src/
+   ├─ index.html              tipografías de Google Fonts
+   ├─ styles.css              tokens de diseño (@theme) y utilidades propias
+   └─ app/
+      ├─ app.html             composición de las secciones
+      ├─ components/          una carpeta por sección de la página
+      ├─ animations/          integración de GSAP y reduced-motion
+      └─ assets/bottles/      ilustraciones SVG de las botellas
+```
+
+## Decisiones de diseño
+
+**Sin routing.** Es una sola página: las secciones son componentes apilados, no
+rutas.
+
+**Sin modo oscuro.** La identidad visual depende del fondo color hueso; un tema
+oscuro duplicaría el sistema de color sin aportar nada al objetivo del proyecto.
+
+**Las botellas son SVG, no fotos.** Tienen que superponerse a los titulares, lo que
+exige transparencia. Además así el color de cada salsa es una variable CSS.
+
+**Una sola librería de animación.** Todo el movimiento va con GSAP. El carrusel usa
+`Draggable` en vez de añadir una segunda librería solo para eso.
+
+## Accesibilidad
+
+- Contraste verificado por cálculo en todos los pares de color, mínimo WCAG AA.
+- `prefers-reduced-motion` respetado desde el primer componente animado: con la
+  preferencia activada el contenido se muestra en su estado final, nunca oculto ni
+  a medio camino.
+- El carrusel de productos es navegable por teclado, no solo arrastrable.
+
+## Inspiración
+
+La dirección visual se estudió a partir de [royalbev.com](https://royalbev.com).
+Se tomaron principios —el fondo texturizado, la jerarquía de tres tipografías, el
+producto superpuesto al titular, la inversión cromática por sección— **no** su
+código, sus imágenes ni sus tipografías.
+
+## Licencia
+
+Pendiente de decidir. Marca, textos y producto son ficticios.
