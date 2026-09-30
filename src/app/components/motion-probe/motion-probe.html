@@ -1,0 +1,26 @@
+<!-- TEMPORAL — sonda de verificación del patrón de animación (fase 2). -->
+<section #root class="py-10">
+  <p class="font-hand text-2xl text-brand">{{ label() }}</p>
+
+  <div class="mt-3 space-y-2">
+    @for (bar of bars; track bar) {
+      <!--
+        El estado inicial va en CSS inline, no en un `gsap.from()`: así el
+        elemento nace ya desplazado y transparente, sin el frame de destello
+        en que se vería colocado antes de que GSAP lo escondiera.
+
+        Con `prefers-reduced-motion: reduce`, la rama MOTION_REDUCED del
+        componente hace un `gsap.set()` que lo deja en su sitio. Si el JS no
+        cargara, el contenido quedaría invisible — es el precio conocido de
+        animar entradas, y por eso el estado final se fuerza también ahí.
+      -->
+      <div
+        data-anim="bar"
+        class="h-6 rounded bg-ink"
+        [style.width.%]="40 + bar * 9"
+        [style.opacity]="0"
+        [style.transform]="'translateX(' + offset() + ')'"
+      ></div>
+    }
+  </div>
+</section>

@@ -70,6 +70,49 @@
   </section>
 
   <!--
+    TEMPORAL — verificación del patrón de animación (fase 2).
+    Se borra entera, junto con el componente app-motion-probe, en la fase 3.
+  -->
+  <section class="mb-20 border-t border-ink/15 pt-10">
+    <h2 class="mb-2 text-2xl">Sonda de animación</h2>
+    <p class="mb-6 max-w-prose text-sm">
+      Las dos sondas entran por lados opuestos: si el scope de los selectores
+      no funcionara, la segunda sobrescribiría a la primera y ambas entrarían
+      del mismo lado. El contador debe marcar 2 con las sondas montadas y
+      volver a 0 al desmontarlas.
+    </p>
+
+    <div class="mb-6 flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        class="rounded bg-brand px-4 py-2 text-bone"
+        (click)="toggleProbes()"
+      >
+        {{ probesVisible() ? 'Desmontar sondas' : 'Montar sondas' }}
+      </button>
+
+      <button
+        type="button"
+        class="rounded border border-ink px-4 py-2"
+        (click)="countTriggers()"
+      >
+        Contar ScrollTriggers
+      </button>
+
+      @if (triggerCount() !== null) {
+        <span class="font-hand text-2xl">
+          ScrollTriggers vivos: {{ triggerCount() }}
+        </span>
+      }
+    </div>
+
+    @if (probesVisible()) {
+      <app-motion-probe label="Sonda A — entra por la izquierda" [direction]="-1" />
+      <app-motion-probe label="Sonda B — entra por la derecha" [direction]="1" />
+    }
+  </section>
+
+  <!--
     Titular con y sin textura, uno encima del otro.
     El nivel de desgaste se eligió comparando cuatro variantes en paralelo;
     ver la tabla de overrides en design-system/bravo/MASTER.md.

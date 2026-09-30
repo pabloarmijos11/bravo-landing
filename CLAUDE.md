@@ -65,37 +65,83 @@ ejecución de la Microsoft Store los intercepta y falla con "Python was not foun
 ## GSAP: el patrón obligatorio
 
 Toda sección animada usa `createMotionScope()` de `src/app/animations/motion-scope.ts`.
-No se llama a `gsap` directamente desde un componente.
+**No se llama a `gsap` directamente desde el ciclo de vida de un componente** — el
+wrapper existe para que nadie tenga que acordarse de limpiar ni de respetar
+`prefers-reduced-motion`.
 
 ```ts
-constructor() {
-  afterNextRender(() => {
-    const ctx = gsap.context(() => {
-      /* selectores relativos al scope */
-    }, this.root().nativeElement);
+export class Hero {
+  private readonly root = viewChild.required<ElementRef<HTMLElement>>('root');
 
-    this.destroyRef.onDestroy(() => ctx.revert());
-  });
+  constructor() {
+    createMotionScope(this.root, (mm) => {
+      mm.add(MOTION_OK, () => {
+        gsap.to('[data-anim="title"]', { y: 0, opacity: 1, duration: 0.8 });
+      });
+      mm.add(MOTION_REDUCED, () => {
+        gsap.set('[data-anim="title"]', { y: 0, opacity: 1 });
+      });
+    });
+  }
 }
 ```
+
+**Se llama desde el constructor**, no desde un método: `afterNextRender` e
+`inject(DestroyRef)` necesitan contexto de inyección.
 
 Cuatro puntos, cada uno con su motivo:
 
 1. **`afterNextRender`, no `ngAfterViewInit`.** Garantiza DOM pintado y no se
-   ejecuta en SSR.
-2. **`gsap.context()` con elemento de scope.** Los selectores se resuelven dentro
-   del componente. Sin el segundo argumento, un selector barre el documento entero
-   y alcanza a otros componentes: la encapsulación de Angular aísla el CSS, **no**
-   los selectores de JS.
-3. **`ctx.revert()` en `DestroyRef.onDestroy`.** Mata tweens y `ScrollTrigger`s del
-   contexto. Omitirlo deja listeners globales vivos sobre nodos muertos — el bug
-   número uno de GSAP en SPAs.
+   ejecuta en SSR, donde no hay `window` y GSAP revienta.
+2. **El scope del `matchMedia`.** Los selectores se resuelven dentro del componente.
+   Sin él, un selector barre el documento entero y alcanza a otros componentes: la
+   encapsulación de Angular aísla el CSS, **no** los selectores de JS. Verificado en
+   la fase 2: con dos sondas montadas, la primera animó solo sus propios elementos.
+3. **`mm.revert()` en `DestroyRef.onDestroy`.** Mata tweens y `ScrollTrigger`s.
+   Omitirlo deja listeners globales vivos sobre nodos muertos — el bug número uno de
+   GSAP en SPAs. Verificado: 2 triggers montados → 0 al desmontar.
 4. **`data-anim="..."` como selector**, nunca clases de Tailwind: declara la
    intención y no se rompe al cambiar el espaciado.
+
+### Por qué `matchMedia` y no `gsap.context()`
+
+`MatchMedia` mantiene su **propio** array de `contexts` y su propio `revert()`
+(comprobado en los typings de `gsap/types/gsap-core.d.ts`). Envolverlo además en un
+`gsap.context()` sería una capa redundante y de fiabilidad dudosa: los callbacks de
+`mm.add()` se ejecutan cuando la media query pasa a coincidir, no cuando corre el
+contexto exterior, así que ese contexto no los captura de forma fiable.
+
+`gsap.matchMedia(scope)` acepta el elemento de scope directamente, que es la misma
+función que el segundo argumento de `context()`. Una capa menos y un solo mecanismo
+de limpieza.
+
+### El estado inicial va en CSS, no en `gsap.from()`
+
+Usar `gsap.to()` con el elemento ya oculto por CSS, en lugar de `gsap.from()` con el
+elemento visible. Con `from`, el elemento se pinta en su sitio y GSAP lo esconde un
+frame después: se ve un destello. Es el mismo problema que `altura-landing` resolvió
+añadiendo la clase `.reveal` en el constructor de su directiva.
 
 **No usar `NgZone.runOutsideAngular()`.** El proyecto es zoneless, así que
 `requestAnimationFrame` no está parcheado y GSAP no dispara detección de cambios.
 Casi todos los tutoriales dicen lo contrario porque asumen Zone.js.
+
+### Lo que pesa GSAP de verdad
+
+Medido en este proyecto, transferencia estimada del build de producción:
+
+| Estado | Peso | Delta |
+|---|---|---|
+| Sin GSAP en el bundle (fase 1) | 36,00 kB | — |
+| GSAP core + `ScrollTrigger` (fase 2) | 83,90 kB | **+47,90 kB** |
+
+**El plan estimaba +34 kB y se quedó corto en un 40 %.** El umbral del proyecto es
+130 kB, así que quedan unos 46 kB de margen para `DrawSVGPlugin` (fase 5),
+`Draggable` e `InertiaPlugin` (fase 6). Debería entrar, pero hay que medir al añadir
+cada uno y no darlo por hecho.
+
+Por eso `gsap-setup.ts` registra **solo lo que ya se usa**: cada plugin registrado
+entra en el bundle aunque no se ejecute.
 
 ### Nombres de import de GSAP
 
@@ -287,12 +333,19 @@ componentes, accesibilidad, anti-patrones. Lo que aporte se acepta como andamio,
 `~/.claude/plugins/cache/.../ui-ux-pro-max/<versión>/...`. La ruta lleva el número de
 versión dentro, así que localízala con `find` en vez de copiarla.
 
-## Regla transversal de verificación
+## Reglas transversales de verificación
 
 **Verificar que el servidor se recuperó no es lo mismo que verificar que `ng build`
 compila.** En `altura-landing` tres síntomas simultáneos —sin scroll, modo oscuro
 roto, nav muerto— resultaron ser `ng serve` caído sirviendo un build anterior. Se
 encontró revisando el log del proceso en segundo plano, no lanzando otro build.
+
+**Para comprobar un `ScrollTrigger`, usar scroll real, no `window.scrollTo`.** Un
+salto programático justo después de montar el componente da un falso negativo: la
+animación parece no dispararse porque los triggers recién creados todavía no han
+asentado sus posiciones. Pasó en la fase 2 y costó un rato de diagnóstico creyendo
+que el patrón estaba roto. Si hace falta scroll programático, hay que dejar pasar
+tiempo o forzar `ScrollTrigger.refresh()`.
 
 ## Estado del proyecto
 
@@ -300,7 +353,12 @@ encontró revisando el log del proceso en segundo plano, no lanzando otro build.
       `@theme`, tipografías, grano de papel, `text-worn`, `scripts/contraste.py`
       (todos los pares canónicos pasan AA) y página temporal de verificación en
       `app.html`, que se reemplaza en la fase 3.
-- [ ] **Fase 2** — patrón de animación (`gsap-setup.ts`, `motion-scope.ts`)
+- [x] **Fase 2** — patrón de animación: `gsap-setup.ts` (registro idempotente) y
+      `motion-scope.ts` (`createMotionScope`). Verificado en navegador con la sonda
+      temporal `app-motion-probe`: la animación corre, los `ScrollTrigger` pasan de
+      2 a 0 al desmontar, y el scope aísla los selectores (la sonda A animó sin
+      tocar las barras de la B). **Pendiente el control manual de
+      `prefers-reduced-motion`.** La sonda se borra en la fase 3.
 - [ ] **Fase 3** — hero
 - [ ] **Fase 4** — escala de picante
 - [ ] **Fase 5** — origen, proceso, CTA, footer

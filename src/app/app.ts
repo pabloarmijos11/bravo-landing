@@ -1,19 +1,48 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+import { MotionProbe } from './components/motion-probe/motion-probe';
 
 /**
  * Raíz de composición.
  *
  * Ahora mismo muestra una página temporal de verificación del sistema de
- * diseño (fase 1). En la fase 3 se sustituye por las siete secciones apiladas
- * — este proyecto no tiene routing a propósito: las secciones son componentes,
- * no rutas.
+ * diseño (fase 1) y del patrón de animación (fase 2). En la fase 3 se
+ * sustituye por las siete secciones apiladas — este proyecto no tiene routing
+ * a propósito: las secciones son componentes, no rutas.
  */
 @Component({
   selector: 'app-root',
-  imports: [],
+  imports: [MotionProbe],
   templateUrl: './app.html',
 })
 export class App {
+  // --- TEMPORAL: verificación del patrón de animación (fase 2) -------------
+
+  /** Monta o desmonta las sondas, para comprobar que la limpieza funciona. */
+  protected readonly probesVisible = signal(true);
+
+  /** Último recuento de ScrollTriggers vivos. */
+  protected readonly triggerCount = signal<number | null>(null);
+
+  protected toggleProbes(): void {
+    this.probesVisible.update((visible) => !visible);
+  }
+
+  /**
+   * Cuenta los `ScrollTrigger` registrados globalmente.
+   *
+   * Es la prueba de que `mm.revert()` limpia de verdad: con las sondas
+   * montadas debe haber 2, y al desmontarlas debe volver a 0. Si al
+   * desmontarlas siguiera habiendo 2, cada navegación dejaría listeners vivos
+   * sobre nodos muertos.
+   */
+  protected countTriggers(): void {
+    this.triggerCount.set(ScrollTrigger.getAll().length);
+  }
+
+  // --- Sistema de diseño (fase 1) -----------------------------------------
+
   /**
    * Los cinco niveles de la escala, en orden de intensidad.
    *
