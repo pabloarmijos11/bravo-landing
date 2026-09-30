@@ -115,6 +115,13 @@ contexto exterior, así que ese contexto no los captura de forma fiable.
 función que el segundo argumento de `context()`. Una capa menos y un solo mecanismo
 de limpieza.
 
+**Y hay un beneficio que sale gratis:** con `prefers-reduced-motion: reduce`, la
+rama `MOTION_OK` no se ejecuta nunca, así que los `ScrollTrigger` **ni siquiera se
+crean**. Verificado en la fase 2: con las dos sondas montadas y `reduce` emulado, el
+contador marca 0. No hay listeners de scroll ni cálculos por frame. Con un `if` a
+mano dentro de un callback esto no pasaría: se crearían igual y solo se saltaría la
+animación.
+
 ### El estado inicial va en CSS, no en `gsap.from()`
 
 Usar `gsap.to()` con el elemento ya oculto por CSS, en lugar de `gsap.from()` con el
@@ -354,11 +361,15 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       (todos los pares canónicos pasan AA) y página temporal de verificación en
       `app.html`, que se reemplaza en la fase 3.
 - [x] **Fase 2** — patrón de animación: `gsap-setup.ts` (registro idempotente) y
-      `motion-scope.ts` (`createMotionScope`). Verificado en navegador con la sonda
-      temporal `app-motion-probe`: la animación corre, los `ScrollTrigger` pasan de
-      2 a 0 al desmontar, y el scope aísla los selectores (la sonda A animó sin
-      tocar las barras de la B). **Pendiente el control manual de
-      `prefers-reduced-motion`.** La sonda se borra en la fase 3.
+      `motion-scope.ts` (`createMotionScope`). Los cuatro puntos verificados en
+      navegador con la sonda temporal `app-motion-probe`:
+      (1) la animación corre y responde al scroll;
+      (2) los `ScrollTrigger` pasan de 2 a 0 al desmontar;
+      (3) con `reduce` emulado, las 12 barras quedan en opacidad 1 y
+          desplazamiento 0, y se crean **0** `ScrollTrigger`;
+      (4) el scope aísla los selectores — la sonda A llegó a opacidad 1
+          mientras la B seguía intacta en 0.
+      La sonda se borra en la fase 3.
 - [ ] **Fase 3** — hero
 - [ ] **Fase 4** — escala de picante
 - [ ] **Fase 5** — origen, proceso, CTA, footer
