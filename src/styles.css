@@ -64,8 +64,27 @@
     background-color: var(--color-bone);
     color: var(--color-ink);
     font-family: var(--font-body);
-    /* La textura se pinta sobre el color de fondo, no lo sustituye. */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E");
+  }
+
+  /*
+     El grano va en un pseudo-elemento FIJO, no en `background-image` del body.
+
+     Como `background-image` del body, la textura se desplaza con el scroll y el
+     navegador la repinta continuamente sobre toda la superficie de la página.
+     Es un filtro SVG (feTurbulence), de los elementos más caros de rasterizar,
+     y Firefox lo acusa bastante más que Chrome.
+
+     Fijo y fuera del flujo, se rasteriza UNA vez y el scroll no lo toca. El
+     grano deja de "viajar" con el contenido, que además es lo correcto: es
+     textura del papel, no del contenido impreso encima.
+  */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E");
   }
 
   /* Los titulares nunca llevan el tracking por defecto de una condensada:
@@ -95,6 +114,10 @@
      - `baseFrequency` 0.16 -> motas pequenas y dispersas. A 0.6 el resultado
        parecia ruido de television; a 0.08 las manchas eran tan grandes que la
        letra parecia corroida en vez de desgastada.
+     - `numOctaves` 2, no 3. Cada octava anade una pasada de ruido al filtro, y
+       las mascaras SVG son de lo mas caro que hay de rasterizar -- Firefox lo
+       acusa mucho mas que Chrome. A este tamano de mota la tercera octava no
+       se distingue a simple vista, asi que se paga sin recibir nada.
      - `feColorMatrix` en el canal alfa: alpha = -13 * ruido + 11.3. Recorta
        solo donde el ruido supera ~0.87, la cola muy alta de la distribucion,
        asi que la letra queda practicamente solida y el desgaste solo se nota
@@ -103,8 +126,8 @@
        letra.
      - `mask-size` 420px -> la mancha no se repite dentro de una misma palabra;
        con 240px el patron se notaba como azulejo. */
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
   -webkit-mask-size: 420px 420px;
   mask-size: 420px 420px;
 }

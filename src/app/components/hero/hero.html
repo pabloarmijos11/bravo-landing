@@ -71,7 +71,17 @@
     data-anim="title"
     class="pointer-events-none select-none [will-change:transform]"
   >
-    <h1 class="text-worn whitespace-nowrap text-center text-[48vw] leading-none text-ink">
+    <!--
+      `translateZ(0)` en el elemento ENMASCARADO (no en el que se anima):
+      lo promueve a su propia capa de composición, de modo que la máscara SVG
+      se rasteriza una sola vez y después solo se desplaza esa capa ya pintada.
+      Sin esto, mover el wrapper puede obligar a rehacer la máscara — y una
+      `mask-image` de `feTurbulence` sobre 730 px de texto es de lo más caro
+      que hay. Firefox lo acusa mucho más que Chrome.
+    -->
+    <h1
+      class="text-worn whitespace-nowrap text-center text-[48vw] leading-none text-ink [transform:translateZ(0)]"
+    >
       Bravo
     </h1>
   </div>
