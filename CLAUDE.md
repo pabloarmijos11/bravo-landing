@@ -27,8 +27,8 @@ Sin backend. El formulario de suscripción no envía nada.
 |---|---|---|
 | Node | 24.14.1 | |
 | npm | 11.11.0 | |
-| Angular | 21.2 | CLI 21.2.20. **Zoneless** — sin `zone.js`. |
-| Tailwind CSS | 4.1 | Configurado por `ng new --style=tailwind`: `@import 'tailwindcss'` + `.postcssrc.json`. **No crear `tailwind.config.js`** — eso es el modelo de v3. |
+| Angular | 21.2.24 | CLI 21.2.20. **Zoneless** — sin `zone.js`. |
+| Tailwind CSS | 4.3.3 | Configurado por `ng new --style=tailwind`: `@import 'tailwindcss'` + `.postcssrc.json`. **No crear `tailwind.config.js`** — eso es el modelo de v3. |
 | GSAP | 3.15.0 | Licencia `Standard 'no charge'`. Todos los plugins incluidos. |
 
 El CLI de Angular 21 nombra las clases **sin sufijo**: un servicio de tema sería
