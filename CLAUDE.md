@@ -221,6 +221,37 @@ requestAnimationFrame(tick);
 // mediana de window.__d.filter(x => x > 0 && x < 400)
 ```
 
+### La duración de una timeline es la de su último tween
+
+No la que uno tenga en la cabeza. Si el **último estado** de una secuencia no tiene
+ningún tween detrás —porque no se desvanece ni transiciona a nada—, la timeline
+termina antes de que ese estado llegue a reposar, y con `scrub` eso significa que
+el pin se suelta justo cuando aparece.
+
+En la escala de picante la timeline debía durar 14,2 unidades y duraba 12,25: el
+quinto ají entraba y la sección se iba. **Se vio midiendo en el navegador, no
+leyendo el código** — la aritmética parecía correcta porque el error estaba en lo
+que GSAP hace, no en las cuentas.
+
+```ts
+// Reserva explícita del final. No anima nada; solo marca la duración.
+tl.to({}, { duration: 0 }, total);
+```
+
+### GSAP no sabe interpolar `var(--token)`
+
+Si a un tween se le pasa `backgroundColor: 'var(--color-heat-2)'`, GSAP escribe esa
+cadena tal cual en el estilo inline: el color **salta de golpe** al final en vez de
+transicionar, sin error ni aviso. Necesita un color real.
+
+La salida que **no** rompe la regla de no escribir hex crudos es resolver el token
+en tiempo de ejecución, de modo que `styles.css` siga siendo la única fuente de
+verdad:
+
+```ts
+getComputedStyle(el).getPropertyValue('--color-heat-2').trim();   // '#e8b31f'
+```
+
 ### Staggers cortos
 
 **45–125 ms.** El instinto de poner 300 ms "para que se note" es justo lo que hace
@@ -278,6 +309,34 @@ Por eso cada `--color-heat-N` va emparejado con un `--color-heat-N-ink` en
 **Consecuencia para la fase 4:** como el fondo transiciona de verde a negro de forma
 continua, el color del texto tiene que **cruzar de `ink` a `bone` a mitad de la
 animación**. No basta con fijarlo al principio.
+
+### Un fondo animado tiene una zona muerta de contraste
+
+Verificar los cinco pares canónicos **no dice nada de lo que se ve entre uno y
+otro**. Durante la animación el fondo no es ninguno de los cinco colores: es una
+interpolación, y el navegador pinta cientos de tonos que nadie comprobó.
+
+`scripts/contraste.py` los recorre ahora (`analizar_rampa`, interpolando en sRGB
+canal a canal, que es como interpola GSAP) y encuentra esto:
+
+| Umbral | Resultado sobre la rampa |
+|---|---|
+| **3,0** — titular y elementos gráficos | ventana segura 55 %–75 %; cruzar al **65 %** |
+| **4,5** — texto de cuerpo | **zona muerta 57,5 %–72,5 %**: ni `ink` ni `bone` llegan |
+
+En el tramo naranja→rojo **ningún** color de texto cumple AA. La salida no fue
+cambiar la paleta sino **que ahí no haya nada que leer**: el texto aparece con el
+fondo ya asentado en un color canónico y se desvanece antes del cruce siguiente.
+Lo que sí está visible todo el rato (medidor, eyebrow) es gráfico o grande, umbral
+3,0, y a ese umbral no hay ningún punto sin color válido.
+
+Es decir: **el «entra y sale» del texto no es una floritura, es la condición que
+hace accesible un fondo que transiciona.** Aplica a cualquier sección futura que
+anime el color de fondo bajo texto.
+
+**Y el cruce es un salto, no una interpolación.** Pasar de `ink` a `bone` de forma
+continua atraviesa grises de contraste pésimo sobre el naranja. Va con `tl.set()`
+en una posición, que con `scrub` es reversible y vuelve solo al subir.
 
 ## La trampa de Tailwind con clases compuestas
 
@@ -356,6 +415,55 @@ viene detrás se ve a través de ella. En el hero se manifestó como que «los c
 abajo se ponen detrás de la botella». Aplica a **todas** las secciones pineadas que
 vengan — la escala de picante de la fase 4 incluida.
 
+**Un pin posicionado por JavaScript tiembla, y el contenido quieto lo delata.**
+
+Síntoma en la escala, en Chrome y no en Firefox: primero una franja del fondo hueso
+de la sección siguiente asomando por el borde inferior al bajar; luego, tapada esa
+franja, el texto «rebotando» — saltando unos píxeles y volviendo.
+
+Eran **el mismo problema**. `pinType: 'transform'` y `anticipatePin` posicionan la
+sección desde JS: el primero con un translateY que GSAP recalcula en cada evento de
+scroll, el segundo adelantando el pin según la velocidad. Chrome compone el scroll
+de forma asíncrona, así que durante un frame la sección está donde la dejó el
+compositor y no donde el JS la quiere. Eso se ve como franja si detrás hay otro
+color, y como temblor si hay texto.
+
+**La solución es `pinType: 'fixed'` y quitar `anticipatePin`**: ancla el navegador
+y no queda ningún valor que el JS pueda tener desactualizado. Cuesta un recálculo
+de layout al entrar y otro al salir — dos en todo el recorrido, no uno por frame.
+
+**Por qué el hero no lo sufre con los mismos ajustes:** su contenido se mueve con el
+scroll (`yPercent`), y el temblor queda enmascarado dentro de ese movimiento. En la
+escala el texto está quieto durante el reposo de cada nivel, así que cualquier
+oscilación se ve desnuda. **Un pin con contenido quieto es un detector de temblor;
+uno con contenido en movimiento lo esconde.**
+
+El camino hasta aquí, porque los dos desvíos son instructivos:
+
+| Intento | Resultado |
+|---|---|
+| `h-[calc(100vh+12px)]` para que la sección sobresalga | Insuficiente: el desfase es del tamaño del salto de la rueda, no de dos píxeles. Revertido. |
+| Teñir el host del color de la sección | Tapó la franja pero **no la causa** — el temblor seguía, solo que ya no se veía en el fondo. Se mantiene igualmente: es barato y protege de cualquier costura residual. |
+
+El tinte del host se queda, entonces, como cinturón además de los tirantes:
+
+```ts
+host: { class: 'block bg-heat-1 motion-reduce:bg-transparent' }
+tl.to([section, this.hostEl.nativeElement], { backgroundColor: ... }, pos);
+```
+
+`block` es necesario: un elemento a medida es `inline` por defecto y no tendría caja
+que pintar. Y tiene que animarse **con** la sección: si se quedara en su color
+inicial, enseñaría verde en mitad de la escala, igual de malo que el hueso.
+
+**Lección de método:** este bug no se puede medir desde JS. `getBoundingClientRect`
+lee *después* de que GSAP corrija, así que devuelve la posición perfecta mientras el
+usuario ve el temblor. Dio rango 0,00 px en el mismo scroll en que el síntoma era
+evidente. Lo que lo resolvió fue **preguntar si el texto se movía de sitio o
+parpadeaba** — dos causas opuestas, dos arreglos opuestos. Es la misma lección que
+la tabla de latencia contra frames perdidos: la descripción cualitativa gana a la
+medición cuando el instrumento no alcanza.
+
 **El titular del hero va a `48vw`, y el número importa.** Con `28vw` la palabra
 cabía entera y el efecto de la referencia —el titular cortado por los lados— no
 se producía en **ningún** tamaño de pantalla: al escalar con `vw`, la proporción
@@ -363,6 +471,25 @@ texto/viewport es constante, así que agrandar la ventana nunca lo arregla. Medi
 `42vw` daba 1467 px en un viewport de 1521 (aún sin cortar); `48vw` da 1677 px, con
 78 px de desborde por lado. El `overflow-hidden` del `<section>` es lo que hace que
 eso no genere scroll horizontal — sin él, el hero rompe la página entera.
+
+**Los cinco ajíes son variedades, no especies, y el quinto declara que no es
+nativo.** Se valoró montar la escala sobre las cinco especies domesticadas de
+*Capsicum* —todas cultivadas en Ecuador, dato real y poco conocido—, pero
+*C. annuum* es la más suave de las cinco y rompía el orden ascendente justo en el
+nivel 5. Van entonces cinco variedades por picor: ají dulce, ají criollo, ají
+ratón, rocoto y habanero.
+
+Dos consecuencias de la regla de copy verificable:
+- **Los SHU por variedad ecuatoriana concreta apenas están documentados.** Las
+  fuentes dan el picor por especie, y solo del rocoto hay cifra fiable
+  (50 000–250 000 SHU). Se usan rangos amplios y citables en vez de inventar una
+  cifra exacta que sonaría más precisa y sería falsa.
+- **El habanero dice en su propia ficha que no es nativo del Ecuador**, porque no
+  lo es: se cultiva en la costa pero viene del Caribe. Omitirlo habría sido más
+  cómodo y menos cierto.
+- El **neapia** amazónico quedó fuera aunque encajaba con el nivel negro: no es
+  una variedad de ají sino una salsa de yuca fermentada de los Siekopai, y
+  colarla en una escala Scoville habría sido un dato mal puesto.
 
 **Sin modo oscuro, a propósito.** La estética depende del fondo hueso; un tema
 oscuro duplicaría todo el sistema de color sin aportar al objetivo, que es visual.
@@ -450,7 +577,22 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       respondiendo en ambos sentidos; **375 px**; **paginado por teclado**;
       y fluidez **en Chrome y en Firefox**, que costó cuatro iteraciones y dejó
       la mitad de lo aprendido de esta fase.
-- [ ] **Fase 4** — escala de picante
+- [x] **Fase 4** — escala de picante: una sola timeline con los cinco grados
+      colocados por posición, fondo interpolado, medidor con `scaleY` y el texto
+      entrando y saliendo por obligación de contraste (ver arriba).
+
+      Verificado en Chrome: los cinco estados en orden con su color canónico
+      exacto y su color de texto emparejado; pin cubriendo el viewport; **sin
+      scroll horizontal a 372 px** y los titulares cabiendo; las **18 utilidades
+      `motion-reduce:` generadas** por Tailwind; **59 FPS de mediana** (p90 17 ms,
+      2 frames largos), el mismo perfil que la fase 3 pese a las cinco máscaras;
+      y **84,92 kB** de transferencia, +1,02 kB sobre la fase 3.
+
+      Verificado además por Pablo en navegador real: **Firefox** limpio desde el
+      principio, y **Chrome** tras tres intentos — la franja blanca del borde y
+      el «rebote» del texto eran el mismo pin posicionado por JS (ver arriba).
+
+      Pendiente de comprobar: `reduce` emulado de verdad y móvil real.
 - [ ] **Fase 5** — origen, proceso, CTA, footer
 - [ ] **Fase 6** — carrusel de productos
 - [ ] **Fase 7** — pulido y auditoría

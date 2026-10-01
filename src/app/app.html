@@ -1,12 +1,18 @@
 <!-- Sección 1 — hero. -->
 <app-hero />
 
+<!-- Sección 2 — la escala de picante. -->
+<app-heat-scale />
+
 <!--
   TEMPORAL — página de verificación del sistema de diseño (fase 1).
 
   Va cayendo a medida que entran las secciones reales. Mientras tanto cumple
-  una función concreta: dar recorrido de scroll por debajo del hero, que su
-  `pin` necesita para poder soltarse.
+  una función concreta: dar recorrido de scroll por debajo de las secciones
+  pineadas, que su `pin` necesita para poder soltarse.
+
+  El bloque de la escala de picante ya se retiró: lo sustituye la sección real
+  de arriba, que usa los mismos tokens emparejados.
 -->
 
 <main class="mx-auto max-w-5xl px-6 py-16">
@@ -25,40 +31,6 @@
         <span class="text-bone">brand · bone encima</span>
       </div>
     </div>
-  </section>
-
-  <!--
-    La escala de picante.
-
-    Cada bloque usa SU token de texto emparejado (heat-N-ink), nunca uno
-    elegido a ojo. El cambio de texto oscuro a claro ocurre entre heat-3 y
-    heat-4 — se ve aquí de un vistazo, y es el motivo de que la fase 4 tenga
-    que cruzar el color del texto a mitad de la animación.
-  -->
-  <section class="mb-16">
-    <h2 class="mb-4 text-2xl">Escala de picante</h2>
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <!--
-        Sin `opacity-*` en ningún texto: una utilidad de opacidad mezcla el
-        color del texto con el del fondo y tira abajo el ratio real, mientras
-        que scripts/contraste.py mide colores sólidos. El texto quedaría por
-        debajo de AA aunque el script diga que pasa. Se vio aquí mismo, sobre
-        heat-3 y heat-4.
-      -->
-      @for (level of heatLevels; track level.pepper) {
-        <article class="rounded p-5" [class]="level.classes">
-          <p class="font-hand text-2xl">{{ level.pepper }}</p>
-          <p class="mt-1 text-sm">{{ level.scoville }}</p>
-          <p class="mt-4 text-xs uppercase tracking-widest">
-            {{ level.classes }}
-          </p>
-        </article>
-      }
-    </div>
-    <p class="mt-3 text-sm opacity-70">
-      Si alguno de los cinco se lee mal, el token está mal — no el diseño.
-      Comprobar con <code>py -3 scripts/contraste.py</code>.
-    </p>
   </section>
 
   <!--

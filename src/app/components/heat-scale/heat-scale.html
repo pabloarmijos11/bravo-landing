@@ -1,0 +1,135 @@
+<!--
+  Escala de picante.
+
+  `bg-heat-1` no es decorativo: una sección con `pin` pasa a estar fuera del
+  flujo mientras dura el pin, y sin fondo opaco propio se ve a través de ella
+  el contenido que viene detrás. Pasó en el hero y aplica igual aquí.
+
+  `text-heat-1-ink` es el estado INICIAL del color de texto. A partir del tramo
+  naranja→rojo GSAP lo cambia a `bone`; el punto exacto lo da
+  `py -3 scripts/contraste.py`. Que el estado inicial esté en CSS y no en un
+  `from()` de GSAP evita el destello del primer frame.
+
+  Las variantes `motion-reduce:` convierten la sección en un flujo vertical
+  normal: cinco bloques apilados, cada uno con su color canónico. Es layout,
+  no animación, así que es CSS y no GSAP — en `reduce` el `ScrollTrigger` ni
+  siquiera llega a crearse.
+
+  EL TEMBLOR DEL PIN NO SE ARREGLA AQUÍ.
+
+  En Chrome, la sección enseñaba una franja de la siguiente por el borde
+  inferior al bajar, y después el texto «rebotaba». Era el mismo problema: el
+  pin se posicionaba desde JavaScript y el compositor iba por delante.
+
+  Se intentó desde este archivo, dándole a la sección `calc(100vh+12px)` para
+  que sobresaliera. No bastó —el desfase es del tamaño del salto de la rueda—
+  y está revertido. El arreglo es `pinType: 'fixed'` sin `anticipatePin`, en
+  heat-scale.ts, donde está el razonamiento entero.
+-->
+<section
+  #root
+  class="relative h-screen overflow-hidden bg-heat-1 text-heat-1-ink motion-reduce:h-auto motion-reduce:overflow-visible"
+>
+  <!--
+    Eyebrow. Está visible durante TODO el recorrido, incluidos los colores
+    intermedios que nadie verificó, así que va en `currentColor` para cruzar de
+    ink a bone con el resto. A umbral 3,0 no hay ningún punto de la rampa sin
+    color válido; por eso puede permitirse estar siempre.
+  -->
+  <p
+    class="absolute left-6 top-8 z-20 font-hand text-2xl sm:left-12 sm:text-3xl motion-reduce:static motion-reduce:mb-4 motion-reduce:px-6"
+  >
+    Cinco grados de calor
+  </p>
+
+  <!--
+    Los cinco niveles, apilados en el mismo sitio. Solo uno es visible a la vez.
+
+    `opacity-0` aquí NO infringe la regla de «ningún opacity sobre texto»: esa
+    regla prohíbe la opacidad PARCIAL permanente, que mezcla el texto con el
+    fondo y hunde el ratio real por debajo de lo que mide el script. Esto es
+    oculto o visible del todo; el estado de lectura siempre es opacidad 1.
+  -->
+  @for (level of levels; track level.pepper; let i = $index) {
+    <article
+      data-anim="level"
+      [class]="level.classes"
+      class="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 lg:px-20 motion-reduce:static motion-reduce:h-auto motion-reduce:py-16"
+    >
+      <!-- Posición en la escala, con el subrayado a mano de la referencia. -->
+      <p class="font-hand text-2xl sm:text-3xl">{{ i + 1 }} de {{ levels.length }}</p>
+      <svg
+        width="92"
+        height="8"
+        viewBox="0 0 92 8"
+        fill="none"
+        aria-hidden="true"
+        class="-mt-1 mb-3"
+      >
+        <path
+          d="M2 5.2C18 2.4 38 2 52 3.4 66 4.8 78 5.6 90 3"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+
+      <!--
+        `text-worn` va en el h2 y la opacidad en el <article> que lo contiene:
+        son elementos distintos a propósito. Si el navegador tiene que aplicar
+        la máscara al MISMO elemento que está animando, la re-rasteriza en cada
+        frame en vez de componer una capa ya pintada — medido en el hero, donde
+        costó caer a 1,3 FPS. `translateZ(0)` promueve el enmascarado a su
+        propia capa.
+      -->
+      <h2
+        class="text-worn max-w-[14ch] text-[11vw] leading-none [transform:translateZ(0)]"
+      >
+        {{ level.pepper }}
+      </h2>
+
+      <p class="mt-3 font-body text-base italic sm:text-lg">{{ level.species }}</p>
+
+      <dl class="mt-6 flex flex-wrap gap-x-10 gap-y-3">
+        <div>
+          <dt class="text-xs uppercase tracking-widest">Picor</dt>
+          <dd class="font-display text-2xl sm:text-3xl">{{ level.scoville }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-widest">Dónde crece</dt>
+          <dd class="font-display text-2xl sm:text-3xl">{{ level.origin }}</dd>
+        </div>
+      </dl>
+
+      <p class="mt-6 max-w-md text-base sm:text-lg">{{ level.note }}</p>
+    </article>
+  }
+
+  <!--
+    Medidor. Se llena de abajo arriba con `scaleY`, no con `height`: la altura
+    dispara layout en cada frame y la escala se resuelve en el compositor.
+
+    `bg-current` lo ata al color de texto de la sección, así que cruza de ink a
+    bone con todo lo demás sin necesitar su propia animación.
+
+    Se oculta en `reduce`: sin recorrido no mide nada.
+  -->
+  <div
+    class="absolute right-5 top-1/2 flex h-[48vh] -translate-y-1/2 items-stretch gap-3 sm:right-10 motion-reduce:hidden"
+    aria-hidden="true"
+  >
+    <!-- Marcas de los cinco grados. -->
+    <div class="flex flex-col-reverse justify-between">
+      @for (level of levels; track level.pepper) {
+        <span class="block h-0.5 w-4 bg-current"></span>
+      }
+    </div>
+
+    <div class="relative w-2.5 overflow-hidden rounded-full border-2 border-current">
+      <div
+        data-anim="meter-fill"
+        class="absolute inset-0 origin-bottom bg-current [transform:scaleY(0.2)]"
+      ></div>
+    </div>
+  </div>
+</section>

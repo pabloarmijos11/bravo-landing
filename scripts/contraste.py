@@ -26,6 +26,11 @@ por el token. Mismo razonamiento que los tokens `on-photo-*` de altura-landing.
 UMBRAL_NORMAL = 4.5   # texto normal, WCAG AA
 UMBRAL_GRANDE = 3.0   # texto grande (>=24px, o >=18.66px en negrita), WCAG AA
 
+# Muestras por tramo al analizar la rampa animada de la fase 4. 40 por tramo
+# da una resolucion de 2,5 % del recorrido: suficiente para localizar el punto
+# de cruce sin que el informe sea ilegible.
+PASOS_RAMPA = 40
+
 
 def luminancia(hex_color: str) -> float:
     """Luminancia relativa segun WCAG 2.x."""
@@ -44,6 +49,21 @@ def ratio(a: str, b: str) -> float:
     return (claro + 0.05) / (oscuro + 0.05)
 
 
+def mezclar(a: str, b: str, t: float) -> str:
+    """Interpola dos colores canal a canal en sRGB, igual que hace GSAP.
+
+    IMPORTANTE que sea en sRGB bruto y no en luz lineal: GSAP interpola los
+    canales 0-255 tal cual, asi que mezclar aqui de otra forma mediria colores
+    que el navegador nunca llega a pintar.
+    """
+    ha, hb = a.lstrip("#"), b.lstrip("#")
+    canales = []
+    for i in (0, 2, 4):
+        ca, cb = int(ha[i:i + 2], 16), int(hb[i:i + 2], 16)
+        canales.append(round(ca + (cb - ca) * t))
+    return "#{:02X}{:02X}{:02X}".format(*canales)
+
+
 # --- Tokens del sistema -----------------------------------------------------
 
 BONE = "#EDE9DF"
@@ -53,11 +73,11 @@ BRAND = "#C4231F"
 # (etiqueta, fondo, texto emparejado) -- el tercer valor es el token
 # `--color-heat-N-ink` que acompana a cada nivel en styles.css.
 ESCALA = [
-    ("heat-1 aji criollo",  "#4E9B47", INK),
-    ("heat-2 aji amarillo", "#E8B31F", INK),
-    ("heat-3 rocoto",       "#E2701A", INK),
-    ("heat-4 habanero",     "#C4231F", BONE),
-    ("heat-5 el extremo",   "#1A1010", BONE),
+    ("heat-1 aji dulce",   "#4E9B47", INK),
+    ("heat-2 aji criollo", "#E8B31F", INK),
+    ("heat-3 aji raton",   "#E2701A", INK),
+    ("heat-4 rocoto",      "#C4231F", BONE),
+    ("heat-5 habanero",    "#1A1010", BONE),
 ]
 
 # (etiqueta, texto, fondo, umbral)
@@ -67,6 +87,72 @@ PARES_BASE = [
     ("bone sobre brand",        BONE, BRAND, UMBRAL_NORMAL),
     ("ink sobre brand (titular)", INK, BRAND, UMBRAL_GRANDE),
 ]
+
+
+def analizar_rampa(umbral: float, etiqueta: str) -> bool:
+    """Comprueba la transicion animada de fondo de la escala de picante.
+
+    EL PROBLEMA QUE RESUELVE
+    ------------------------
+    En la fase 4 el fondo no es uno de los cinco colores: es una interpolacion
+    continua entre ellos, asi que durante la animacion el navegador pinta
+    cientos de colores que NO estan en el sistema de diseno y que nadie ha
+    verificado. Medir solo los cinco pares canonicos no dice nada de lo que se
+    ve entre uno y otro.
+
+    El texto tiene que cruzar de `ink` a `bone` en algun punto del recorrido.
+    Esta funcion busca la VENTANA en la que los dos colores pasan el umbral a
+    la vez: cualquier punto de esa ventana es un sitio seguro para cruzar. Si
+    la ventana estuviera vacia existiria una zona muerta donde ningun color de
+    texto cumple AA, y habria que cambiar los colores de la escala o cortar el
+    fondo en vez de interpolarlo.
+
+    Devuelve True si hay ventana.
+    """
+    # La rampa recorre los cinco niveles encadenados: 4 tramos.
+    colores = [fondo for _, fondo, _ in ESCALA]
+    muestras: list[tuple[float, str]] = []
+    for i in range(len(colores) - 1):
+        for paso in range(PASOS_RAMPA + 1):
+            t = paso / PASOS_RAMPA
+            # El ultimo paso de un tramo es el primero del siguiente.
+            if paso == PASOS_RAMPA and i < len(colores) - 2:
+                continue
+            posicion = (i + t) / (len(colores) - 1)
+            muestras.append((posicion, mezclar(colores[i], colores[i + 1], t)))
+
+    ultimo_ink = max(
+        (p for p, c in muestras if ratio(INK, c) >= umbral), default=None
+    )
+    primer_bone = min(
+        (p for p, c in muestras if ratio(BONE, c) >= umbral), default=None
+    )
+
+    print(f"Rampa animada del fondo -- {etiqueta} (umbral {umbral:.1f}):")
+
+    if ultimo_ink is None or primer_bone is None:
+        print("  Uno de los dos colores de texto NO pasa el umbral en ningun punto.")
+        return False
+
+    if primer_bone > ultimo_ink:
+        print(
+            f"  ZONA MUERTA entre {ultimo_ink:>5.1%} y {primer_bone:>5.1%} "
+            "del recorrido: ahi no sirve ni ink ni bone."
+        )
+        return False
+
+    medio = (primer_bone + ultimo_ink) / 2
+    peor = min(
+        min(ratio(INK, c), ratio(BONE, c))
+        for p, c in muestras
+        if primer_bone <= p <= ultimo_ink
+    )
+    print(
+        f"  Ventana segura para cruzar: {primer_bone:>5.1%} a {ultimo_ink:>5.1%} "
+        f"del recorrido (los dos pasan)."
+    )
+    print(f"  Punto de cruce recomendado: {medio:.1%}  (peor ratio ahi dentro: {peor:.2f})")
+    return True
 
 
 def main() -> int:
@@ -96,6 +182,24 @@ def main() -> int:
         nombre = "ink" if contrario == INK else "bone"
         r = ratio(contrario, fondo)
         print(f"  {nombre:<4} sobre {etiqueta:<20} {r:>6.2f}  <- no usar")
+
+    # Fase 4: el fondo se interpola entre los cinco niveles, asi que hay que
+    # verificar tambien los colores intermedios, que no estan en el sistema.
+    #
+    # Esto NO suma a `fallos`: no es un par canonico mal elegido, es una
+    # restriccion de la animacion. La conclusion esta debajo.
+    print()
+    analizar_rampa(UMBRAL_GRANDE, "titular y elementos graficos")
+    print()
+    analizar_rampa(UMBRAL_NORMAL, "texto de cuerpo")
+    print()
+    print("Consecuencia para la escala de picante (fase 4):")
+    print("  - Elementos SIEMPRE visibles (medidor, eje): cruzan ink -> bone al 65 %")
+    print("    del recorrido. A umbral 3.0 no hay ningun punto sin color valido.")
+    print("  - Texto de cuerpo: NO puede estar visible mientras el fondo transiciona.")
+    print("    Aparece con el fondo ya asentado en un color canonico y se desvanece")
+    print("    antes del cruce al siguiente. La zona muerta deja de importar porque")
+    print("    ahi no hay nada que leer.")
 
     print()
     if fallos:

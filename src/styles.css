@@ -23,15 +23,15 @@
      scripts/contraste.py, no elegido a ojo. Usar el texto contrario al que
      dice el token rompe WCAG (hasta 1.06:1 en heat-5).
   ------------------------------------------------------------------------ */
-  --color-heat-1: #4e9b47;      /* aji criollo   */
+  --color-heat-1: #4e9b47;      /* aji dulce     */
   --color-heat-1-ink: #1a1919;
-  --color-heat-2: #e8b31f;      /* aji amarillo  */
+  --color-heat-2: #e8b31f;      /* aji criollo   */
   --color-heat-2-ink: #1a1919;
-  --color-heat-3: #e2701a;      /* rocoto        */
+  --color-heat-3: #e2701a;      /* aji raton     */
   --color-heat-3-ink: #1a1919;
-  --color-heat-4: #c4231f;      /* habanero      */
+  --color-heat-4: #c4231f;      /* rocoto        */
   --color-heat-4-ink: #ede9df;
-  --color-heat-5: #1a1010;      /* el extremo    */
+  --color-heat-5: #1a1010;      /* habanero      */
   --color-heat-5-ink: #ede9df;
 
   /* --- Tipografia: tres niveles con roles opuestos ------------------------
