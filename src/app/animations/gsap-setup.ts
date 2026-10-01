@@ -31,16 +31,7 @@ export function setupGsap(): void {
   gsap.registerPlugin(ScrollTrigger);
 
   /*
-    ⚠️ EXPERIMENTO EN EVALUACIÓN — NO DAR POR BUENO.
-
-    Rompe AvPág: comprobado en Chrome, la tecla deja de hacer nada (Ctrl+Inicio
-    y las flechas sí siguen funcionando). Eso es una regresión de accesibilidad
-    real, así que esto SOLO se queda si demuestra que arregla Firefox, y aun
-    entonces habrá que devolverle AvPág con un handler propio.
-
-    Si al leer esto sigue aquí sin una nota diciendo que se confirmó, quítalo.
-
-    ---
+    ⚠️ DESACTIVADO A PROPÓSITO — ver abajo antes de reactivarlo.
 
     Fuerza que el scroll se procese en el hilo de JavaScript.
 
@@ -59,11 +50,24 @@ export function setupGsap(): void {
     del paquete la describe como "forces scrolling to be done on the JavaScript
     thread, ensuring it is synchronized".
 
-    COSTE A VIGILAR: al tomar el control del scroll, hay que comprobar que
-    siguen funcionando el teclado (flechas, AvPág, inicio/fin) y el arrastre
-    táctil. Si algo de eso se rompe, revisarlo antes que quitarlo del todo.
+    POR QUÉ ESTÁ DESACTIVADO
+
+    Rompe AvPág y RePág. Las flechas y Ctrl+Inicio siguen bien, pero el
+    paginado no, y reimplementarlo a mano resultó peor que el problema: el
+    handler peleaba con el `pin` del hero y el scroll acababa saltando hacia
+    atrás.
+
+    Pero sobre todo: se añadió ANTES de sustituir la textura del titular por un
+    PNG. Esa sustitución bajó mucho el coste de rasterizado, y parte del
+    arrastre que se le atribuía al desfase de hilos podía venir de ahí. Mantener
+    una API que rompe navegación por teclado, para compensar un problema que
+    quizá ya no existe, es acumular complejidad sin comprobar que hace falta.
+
+    CUÁNDO REACTIVARLO: solo si se confirma que sin él Firefox vuelve a
+    arrastrarse CON la textura ya en PNG. En ese caso habrá que resolver bien
+    el paginado — probablemente con ScrollToPlugin en vez de a mano.
   */
-  ScrollTrigger.normalizeScroll(true);
+  // ScrollTrigger.normalizeScroll(true);
 
   registered = true;
 }

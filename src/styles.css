@@ -104,30 +104,34 @@
 
 @utility text-worn {
   /* Textura desgastada del titular: sustituye a la fuente grunge de pago
-     (Veneer) de la referencia. Recorta un ruido sobre el texto con
-     `mask-image`, de modo que el color lo sigue poniendo `color` y el token
-     semantico sigue mandando.
+     (Veneer) de la referencia. Recorta motas sobre el texto con `mask-image`,
+     de modo que el color lo sigue poniendo `color` y el token semantico sigue
+     mandando.
 
-     Los tres numeros que gobiernan el efecto. Se calibraron en el navegador
-     comparando cuatro variantes en paralelo, no a ojo de una en una:
+     ES UN PNG, NO UN FILTRO SVG, Y ESO IMPORTA.
 
-     - `baseFrequency` 0.16 -> motas pequenas y dispersas. A 0.6 el resultado
-       parecia ruido de television; a 0.08 las manchas eran tan grandes que la
-       letra parecia corroida en vez de desgastada.
-     - `numOctaves` 2, no 3. Cada octava anade una pasada de ruido al filtro, y
-       las mascaras SVG son de lo mas caro que hay de rasterizar -- Firefox lo
-       acusa mucho mas que Chrome. A este tamano de mota la tercera octava no
-       se distingue a simple vista, asi que se paga sin recibir nada.
-     - `feColorMatrix` en el canal alfa: alpha = -13 * ruido + 11.3. Recorta
-       solo donde el ruido supera ~0.87, la cola muy alta de la distribucion,
-       asi que la letra queda practicamente solida y el desgaste solo se nota
-       de cerca. ES EL NUMERO SENSIBLE: bajar la pendiente come letra muy
-       rapido. Con -7/5.6 ya habia demasiado blanco; con -5/3.9 se comia media
-       letra.
-     - `mask-size` 420px -> la mancha no se repite dentro de una misma palabra;
-       con 240px el patron se notaba como azulejo. */
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -13 11.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23w)'/%3E%3C/svg%3E");
+     La primera version usaba `feTurbulence` como mask-image. Funcionaba, pero
+     un filtro se EVALUA cada vez que el navegador rasteriza la capa -- y aqui
+     el titular mide 730 px de alto y ademas se mueve con el scroll. Chrome lo
+     aguantaba a 59 FPS; Firefox perdia frames de forma muy visible. Se
+     confirmo aislandolo: quitando la mascara, Firefox iba fluido.
+
+     Un PNG ya rasterizado no se evalua, solo se compone. Mismo aspecto, una
+     fraccion del coste, 21,6 kB.
+
+     El archivo se genera con `py -3 scripts/generar-textura.py`, que lleva
+     dentro los parametros y el porque de cada uno. La semilla es fija: no
+     regenerar "por si acaso", porque cambiaria el diseno sin motivo.
+
+     Va en gris + ALFA (PNG color type 4) a proposito: `mask-image` con una
+     imagen usa por defecto el canal alfa. Con escala de grises haria falta
+     `mask-mode: luminance`, de soporte irregular -- y estamos resolviendo
+     justamente un problema de compatibilidad. */
+  -webkit-mask-image: url('/textura-titular.png');
+  mask-image: url('/textura-titular.png');
+  /* 420px: la mancha no se repite dentro de una misma palabra. Con 240 el
+     patron se notaba como azulejo. El PNG repite sin costura porque su celda
+     de ruido divide exactamente su tamano. */
   -webkit-mask-size: 420px 420px;
   mask-size: 420px 420px;
 }
