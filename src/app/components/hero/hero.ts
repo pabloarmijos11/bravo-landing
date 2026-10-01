@@ -42,6 +42,30 @@ export class Hero {
             end: '+=70%',
             pin: true,
 
+            // Pinea con `transform`, no con `position: fixed`.
+            //
+            // Por defecto ScrollTrigger cambia el elemento a `position: fixed`
+            // mientras dura el pin y lo devuelve al flujo al soltarlo. Cambiar
+            // el modelo de posicionamiento de un elemento de pantalla completa
+            // obliga al navegador a recalcular el layout, y eso produce un
+            // frame largo justo en la transición — el tirón que se notaba al
+            // entrar en la sección siguiente.
+            //
+            // Con `transform` no hay cambio de posicionamiento: es un
+            // translateY que se aplica y se deja de aplicar, resuelto en el
+            // compositor.
+            //
+            // CONTRAINDICACIÓN: un elemento `position: fixed` DENTRO de algo
+            // transformado deja de ser fijo respecto al viewport. Aquí no hay
+            // ninguno (el grano del fondo es `body::before`, fuera del hero),
+            // pero hay que recordarlo si alguna sección futura mete uno.
+            pinType: 'transform',
+
+            // Adelanta la preparación del pin en función de la velocidad del
+            // scroll. Pensado justo para secciones grandes, donde el cambio se
+            // nota si se hace exactamente en el píxel del umbral.
+            anticipatePin: 1,
+
             // `true`, NO un número. Y esto costó dos rondas de entenderlo.
             //
             // Un `scrub` numérico no es un efecto: es LATENCIA deliberada. La
