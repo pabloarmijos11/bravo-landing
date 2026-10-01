@@ -35,10 +35,6 @@ export class Hero {
             trigger: this.root().nativeElement,
             start: 'top top',
 
-            // ESTOS DOS NÚMEROS SON LOS QUE DECIDEN SI SE SIENTE BIEN.
-            // No son de rendimiento: el scroll va a 59 FPS con cualquiera de
-            // ellos. Son de percepción, y conviene tocarlos juntos.
-
             // Cuánto scroll se pasa con la página visualmente detenida. Con
             // '+=100%' era una pantalla entera y se sentía atascado: el usuario
             // gira la rueda y la página no avanza. 70% mantiene el efecto y
@@ -46,11 +42,26 @@ export class Hero {
             end: '+=70%',
             pin: true,
 
-            // Inercia: la animación persigue al scroll en vez de pegarse a él,
-            // y eso le da peso. Pero 0.5 s es suficiente retraso para que se
-            // lea como que no responde. 0.3 conserva la sensación de masa sin
-            // que parezca lag.
-            scrub: 0.3,
+            // `true`, NO un número. Y esto costó dos rondas de entenderlo.
+            //
+            // Un `scrub` numérico no es un efecto: es LATENCIA deliberada. La
+            // animación se queda N segundos por detrás del scroll, y esa
+            // latencia se SUMA a la que ya mete el navegador por su cuenta.
+            //
+            // Firefox trae smooth scroll nativo activado y bastante agresivo,
+            // así que allí se acumulaban las dos y el resultado era fluido pero
+            // retrasado — «se arrastra». En Chrome, con menos suavizado propio,
+            // el mismo valor se sentía bien. De ahí que el síntoma apareciera
+            // en un navegador y no en el otro.
+            //
+            // Con `true` la animación va atada 1:1 a la posición del scroll y
+            // el suavizado lo pone cada navegador a su manera, que es la que
+            // sus usuarios ya esperan. Nosotros no añadimos retraso encima.
+            //
+            // Nota: esto NO era un problema de rendimiento. Medido: 59 FPS en
+            // Chrome tanto antes como después. Optimizar el pintado no podía
+            // arreglarlo, porque el problema nunca estuvo ahí.
+            scrub: true,
           },
         });
 

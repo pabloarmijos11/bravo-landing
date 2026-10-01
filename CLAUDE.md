@@ -168,27 +168,40 @@ verificada contra el paquete en `node_modules`:
 **`Draggable` con `inertia: true` no hace nada si `InertiaPlugin` no está
 registrado.** Falla en silencio, sin error ni aviso.
 
-### `scrub` numérico, no `scrub: true`
+### `scrub: true`, nunca un número
 
-El número añade inercia: la animación *persigue* al scroll en vez de pegarse a él, y
-eso le da peso. Es la diferencia entre un efecto mecánico y uno con masa.
+**Un `scrub` numérico no es un efecto: es latencia deliberada.** La animación se
+queda N segundos por detrás del scroll, y esa latencia **se suma** a la que el
+navegador ya mete por su cuenta.
 
-**Pero el número se pasa de frenada muy pronto.** En el hero se empezó con `0.5` y
-Pablo lo describió como «trabado». Medio segundo de retraso ya se lee como que la
-página no responde. Valor actual: **`0.3`**.
+Firefox trae smooth scroll nativo activado y agresivo. Con `scrub: 0.3` se acumulaban
+los dos y el resultado era fluido pero retrasado — Pablo lo describió como «se
+arrastra». En Chrome, con menos suavizado propio, el mismo valor se sentía bien. Por
+eso el síntoma aparecía en un navegador y no en el otro.
 
-### Los dos diales de la sensación de scroll
+Con `true`, la animación va atada 1:1 a la posición del scroll y el suavizado lo pone
+cada navegador a su manera, que es la que sus usuarios ya esperan.
 
-Cuando algo con `pin` se sienta pesado, el problema casi nunca es el rendimiento.
-Medido en el hero: **59 FPS sostenidos** (17 ms entre frames, p90 y peor caso
-también 17 ms) con la versión que se sentía trabada. Los responsables son otros dos:
+### Diagnóstico: distinguir latencia de falta de frames
 
-| Dial | Qué hace | Si se pasa |
+Son dos problemas distintos y se arreglan en sitios opuestos. **La forma de
+distinguirlos es preguntar cómo se siente, no mirar el código:**
+
+| Síntoma | Causa | Dónde se arregla |
 |---|---|---|
-| `end: '+=N%'` | cuánto scroll transcurre con la página detenida | se siente atascada: giras la rueda y no avanza |
-| `scrub: N` | segundos de inercia | se lee como lag, no como peso |
+| «va a tirones», «da saltos» | faltan frames | coste de pintado: filtros SVG, máscaras, capas |
+| «fluido pero llega tarde», «se arrastra» | **latencia** | `scrub`, y el suavizado del navegador |
 
-Valores actuales del hero: `end: '+=70%'`, `scrub: 0.3`.
+En el hero se perdió una ronda entera optimizando pintado —grano del fondo a
+pseudo-elemento fijo, `numOctaves` de 3 a 2, `translateZ(0)` en el enmascarado—
+cuando el problema era latencia. Las optimizaciones valen por sí solas y se quedan,
+pero no podían arreglar el síntoma: **59 FPS medidos antes y después.**
+
+### El otro dial: cuánto dura el pin
+
+`end: '+=N%'` es cuánto scroll transcurre con la página visualmente detenida. Con
+`'+=100%'` era una pantalla entera y se sentía atascado: giras la rueda y no avanza.
+Valor actual del hero: **`'+=70%'`**.
 
 ### Cómo medir FPS sin engañarse
 
