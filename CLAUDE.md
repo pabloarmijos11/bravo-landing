@@ -444,10 +444,12 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       La sonda se borra en la fase 3.
 - [x] **Fase 3** — hero con `pin` + `scrub`, y componente `app-bottle` (una sola
       botella SVG; el color entra por `[fill]`, así que añadir una salsa no añade
-      un archivo). Tres capas a distinta velocidad. Verificado en navegador a
-      1521 px: el titular sangra 78 px por lado sin generar scroll horizontal, y
-      el `scrub` responde en ambos sentidos.
-      **Pendiente: verificación en móvil (375 px).**
+      un archivo). Tres capas a distinta velocidad.
+
+      Verificado: titular sangrando 78 px por lado sin scroll horizontal; `scrub`
+      respondiendo en ambos sentidos; **375 px**; **paginado por teclado**;
+      y fluidez **en Chrome y en Firefox**, que costó cuatro iteraciones y dejó
+      la mitad de lo aprendido de esta fase.
 - [ ] **Fase 4** — escala de picante
 - [ ] **Fase 5** — origen, proceso, CTA, footer
 - [ ] **Fase 6** — carrusel de productos
