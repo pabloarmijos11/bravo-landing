@@ -74,5 +74,27 @@ export function setupGsap(): void {
   */
   // ScrollTrigger.normalizeScroll(true);
 
+  /*
+    Recalcular posiciones cuando terminen de cargar las tipografías.
+
+    ScrollTrigger se refresca solo en `load`, `resize` y `visibilitychange`
+    (su `autoRefreshEvents` por defecto). Las fuentes web NO están en esa lista,
+    y suelen llegar DESPUÉS de `load`: lo que pasa entonces es que los `start` y
+    `end` quedaron calculados con las métricas de la fuente de respaldo.
+
+    Medido en este proyecto forzando el respaldo en todo el documento: el alto
+    del documento cambia 91 px, y las secciones se desplazan entre 32 y 58 px.
+    No es catastrófico —por eso no se había notado— pero son triggers que se
+    disparan unos píxeles antes o después de donde deberían.
+
+    El hero no se ve afectado, porque está en la posición 0 y su recorrido es
+    relativo al viewport (`top top` + `+=70%`). El desfase crece hacia abajo.
+
+    `document.fonts` existe en todos los navegadores que soportan este proyecto,
+    pero el encadenado opcional lo deja a salvo si algún día se renderiza en un
+    entorno sin él.
+  */
+  document.fonts?.ready.then(() => ScrollTrigger.refresh());
+
   registered = true;
 }

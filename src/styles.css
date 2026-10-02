@@ -11,6 +11,36 @@
    color de Tailwind de fabrica (bg-red-600 esta prohibido).
 --------------------------------------------------------------------------- */
 
+/* ---------------------------------------------------------------------------
+   Respaldo metrico de Anton
+   ---------------------------------------------------------------------------
+   Existe para que el titular del hero NO cambie de tamano cuando Anton termina
+   de cargar.
+
+   El problema: las fuentes van con `display=swap`, asi que el navegador pinta
+   primero con la de respaldo y cambia a Anton al recibirla. Medido en este
+   proyecto, el titular «Bravo» a 737 px pasa de 1998 px de ancho con Arial
+   Narrow a 1677 px con Anton: un salto del 19,1 % en el elemento mas grande de
+   la pagina, que ademas lleva una `mask-image` encima y hay que volver a
+   rasterizar entero. Firefox lo acusa bastante mas que Chrome, igual que con el
+   resto de trabajo de rasterizado.
+
+   `size-adjust: 83.9%` es exactamente 1677/1998: encoge el respaldo hasta
+   ocupar lo mismo que Anton, de modo que el cambio de fuente ya no mueve nada.
+   La altura no necesita correccion -- medida, la diferencia es del 0 %-- asi
+   que no hacen falta `ascent-override` ni `descent-override`.
+
+   `local()` y no una URL: no descarga nada, solo reetiqueta una fuente que ya
+   esta en el sistema. Si no existe, la cadena sigue hasta `sans-serif` y se
+   pierde el ajuste, que es exactamente como se comportaba antes.
+--------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Anton Fallback';
+  src: local('Arial Narrow'), local('Liberation Sans Narrow'), local('Arial');
+  size-adjust: 83.9%;
+}
+
 @theme {
   /* --- Base: tres colores, como la referencia ---------------------------- */
   --color-bone: #edE9df;   /* fondo de pagina */
@@ -45,7 +75,9 @@
      El contraste entre los tres ES la estetica. Sustituyen a las fuentes de
      pago de la referencia (Veneer, Monday, Gellix).
   ------------------------------------------------------------------------ */
-  --font-display: 'Anton', 'Arial Narrow', sans-serif;      /* titulares   */
+  /* 'Anton Fallback' es Arial Narrow con las metricas ajustadas a las de
+     Anton; ver el @font-face de arriba. Va ANTES del respaldo generico. */
+  --font-display: 'Anton', 'Anton Fallback', 'Arial Narrow', sans-serif;
   --font-hand: 'Caveat', 'Comic Sans MS', cursive;          /* eyebrows    */
   --font-body: 'Outfit', ui-sans-serif, system-ui, sans-serif; /* cuerpo   */
 }

@@ -30,7 +30,36 @@ export class Hero {
   constructor() {
     createMotionScope(this.root, (mm) => {
       mm.add(MOTION_OK, () => {
+        // ---------------------------------------------------------------
+        // PRECALENTAR LAS CAPAS, ANTES DE CREAR LA TIMELINE
+        // ---------------------------------------------------------------
+        // Firefox se trababa en el PRIMER movimiento de rueda y después iba
+        // fluido. Dos datos acotaron la causa: esperar cinco segundos antes de
+        // tocar nada no cambiaba nada —así que no era trabajo de carga— y el
+        // tirón caía siempre en el primer frame animado.
+        //
+        // Eso es la creación de las capas de composición. Mientras no hay un
+        // transform de verdad, el navegador no tiene por qué rasterizar el
+        // titular en su propia capa; y rasterizarlo cuesta, porque mide
+        // 1677 × 1106 px y lleva una `mask-image` encima. Al llegar el primer
+        // frame hace ese trabajo entero de golpe. Después queda cacheado, y de
+        // ahí que solo se note una vez. `will-change: transform` lo pide, pero
+        // es una sugerencia que los navegadores ignoran cuando el área es muy
+        // grande, y Firefox es bastante más conservador que Chrome.
+        //
+        // `force3D: true` hace que GSAP escriba `translate3d(0,0,0)` AHORA, en
+        // la carga, en vez de esperar al primer movimiento. El trabajo es el
+        // mismo; lo que cambia es que ocurre cuando nadie está mirando.
+        gsap.set(
+          '[data-anim="title"], [data-anim="bottle"], [data-anim="intro"], [data-anim="scroll-hint"]',
+          { force3D: true, y: 0 },
+        );
+
         const tl = gsap.timeline({
+          // `force3D` también en la timeline: si GSAP volviera a un transform
+          // 2D al animar, el navegador podría descartar la capa y habría que
+          // rehacerla. Mantenerlo en 3D la conserva todo el recorrido.
+          defaults: { ease: 'none', force3D: true },
           scrollTrigger: {
             trigger: this.root().nativeElement,
             start: 'top top',
@@ -91,10 +120,12 @@ export class Hero {
 
         // Todo arranca en 0 y va al valor final: las tres capas avanzan a la
         // vez pero distinta distancia, que es de donde sale la profundidad.
-        tl.to('[data-anim="title"]', { yPercent: -14, scale: 1.06, ease: 'none' }, 0)
-          .to('[data-anim="bottle"]', { yPercent: -46, ease: 'none' }, 0)
-          .to('[data-anim="intro"]', { yPercent: -24, opacity: 0, ease: 'none' }, 0)
-          .to('[data-anim="scroll-hint"]', { opacity: 0, ease: 'none' }, 0);
+        // El `ease: 'none'` ya no se repite en cada tween: va en los `defaults`
+        // de la timeline, junto con `force3D`.
+        tl.to('[data-anim="title"]', { yPercent: -14, scale: 1.06 }, 0)
+          .to('[data-anim="bottle"]', { yPercent: -46 }, 0)
+          .to('[data-anim="intro"]', { yPercent: -24, opacity: 0 }, 0)
+          .to('[data-anim="scroll-hint"]', { opacity: 0 }, 0);
       });
 
       mm.add(MOTION_REDUCED, () => {

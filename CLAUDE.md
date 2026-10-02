@@ -211,6 +211,84 @@ eso el síntoma aparecía en un navegador y no en el otro.
 Con `true`, la animación va atada 1:1 a la posición del scroll y el suavizado lo pone
 cada navegador a su manera, que es la que sus usuarios ya esperan.
 
+### El cambio de fuente mueve el titular un 19 %, y eso se paga una vez
+
+Las tipografías van con `display=swap`, así que el navegador pinta primero con
+la fuente de respaldo y cambia a Anton al recibirla. Con un titular normal eso
+es un parpadeo; con **este** titular es un reflujo del elemento más grande de la
+página, que además lleva una `mask-image` y hay que volver a rasterizar entero.
+
+Medido: «Bravo» a 737 px ocupa **1998 px con Arial Narrow y 1677 px con Anton**
+— un salto de 321 px, el 19,1 %. La altura no cambia (0 %).
+
+Se corrige con un respaldo de métricas ajustadas, que no descarga nada:
+
+```css
+@font-face {
+  font-family: 'Anton Fallback';
+  src: local('Arial Narrow'), local('Liberation Sans Narrow'), local('Arial');
+  size-adjust: 83.9%;          /* 1677 / 1998, exactamente lo medido */
+}
+```
+
+Verificado después: el salto baja de **321 px a 12 px** (0,72 % de error
+residual). El titular ya no se mueve al llegar Anton.
+
+**Y falta el refresh que ScrollTrigger no hace solo.** Sus `autoRefreshEvents`
+por defecto son `load`, `resize` y `visibilitychange`; **las fuentes web no están
+en esa lista** y suelen llegar después de `load`, así que los `start` y `end`
+quedan calculados con las métricas equivocadas. Medido forzando el respaldo en
+todo el documento: 91 px de diferencia en el alto total y entre 32 y 58 px de
+desplazamiento por sección.
+
+```ts
+document.fonts?.ready.then(() => ScrollTrigger.refresh());
+```
+
+El hero es el único que se libra, porque está en la posición 0 y su recorrido es
+relativo al viewport. **El desfase crece hacia abajo**, así que lo sufren las
+secciones del final.
+
+### `will-change` es una sugerencia, y una capa grande la anula
+
+Firefox se trababa en el **primer** movimiento de rueda del hero y después iba
+fluido. Dos respuestas acotaron la causa antes de tocar nada:
+
+| Pregunta | Respuesta | Qué descarta |
+|---|---|---|
+| ¿Cuándo se traba? | al girar la rueda por primera vez | no es la salida del pin |
+| ¿Y si esperas 5 s antes de scrollear? | se traba igual | **no es trabajo de carga** |
+
+Es decir: el coste se paga **la primera vez que algo se anima**, no antes. Eso es
+la creación de la capa de composición — hasta que no hay un transform de verdad,
+el navegador no tiene por qué rasterizar el titular en su propia capa, y
+rasterizarlo cuesta: mide 1677 × 737 px y lleva una `mask-image` encima.
+
+**El número que lo explica: 1677 × 737 × 4 bytes = 4,7 MB de textura.** Firefox
+tiene un presupuesto para `will-change` (`layout.css.will-change.max-mb`) que por
+defecto ronda los **3 MB**, y cuando se supera **ignora la propiedad**. Chrome es
+más generoso, y de ahí que el síntoma fuera de un solo navegador.
+
+La palanca es de GSAP, no de CSS:
+
+```ts
+gsap.set(selectores, { force3D: true, y: 0 });              // en la carga
+const tl = gsap.timeline({ defaults: { force3D: true } });  // y durante
+```
+
+`force3D` escribe `translate3d(0,0,0)` desde el render inicial en vez de esperar
+al movimiento. **El trabajo es el mismo; lo que cambia es que ocurre cuando nadie
+está mirando.** Y mantenerlo durante la animación evita que GSAP vuelva a un
+transform 2D y el navegador descarte la capa.
+
+Verificado con `scrollY` en 0 y sin haber tocado la rueda: los cuatro elementos
+animados del hero ya llevan `translate3d` en su estilo inline.
+
+**La lección general:** `will-change: transform` no garantiza nada. Si la capa es
+grande —y en este proyecto los titulares son enormes por diseño— hay que forzar
+la promoción con un transform 3D real y comprobar que está puesta, en vez de
+suponer que la sugerencia se atendió.
+
 ### Diagnóstico: distinguir latencia de falta de frames
 
 Son dos problemas distintos y se arreglan en sitios opuestos. **La forma de
