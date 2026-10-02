@@ -1,0 +1,85 @@
+<!--
+  Proceso.
+
+  La línea que cose los cuatro pasos es un SVG absoluto a la izquierda que
+  ocupa todo el alto de la lista. Tres decisiones que no son obvias:
+
+  1. `preserveAspectRatio="none"` — el SVG tiene que estirarse hasta el alto
+     real de la lista, que depende del texto y cambia con el ancho de pantalla.
+     Sin esto mantendría su proporción y la línea se quedaría corta o se saldría.
+
+  2. `vector-effect="non-scaling-stroke"` — es el acompañante obligatorio del
+     anterior. Al estirar el SVG en un solo eje, el grosor del trazo se estira
+     con él y la línea sale más gruesa en vertical que en horizontal. Con esto
+     el grosor se calcula después de la transformación y queda constante.
+
+  3. `stroke-dasharray="0 9999"` como ATRIBUTO, no por JS — es el estado
+     inicial, y por la misma razón que el resto de estados iniciales del
+     proyecto van en CSS: si lo pusiera `gsap.set`, el navegador pintaría la
+     línea entera durante un frame antes de esconderla. DrawSVGPlugin
+     sobrescribe este valor en cuanto toma el control.
+
+  Los puntos de cada paso van en el HTML, no dentro del SVG: así se alinean
+  solos con su texto sea cual sea la altura del párrafo, sin tener que
+  calcular coordenadas.
+-->
+<section
+  #root
+  id="proceso"
+  class="relative bg-bone px-6 py-24 sm:px-12 sm:py-32 lg:px-20"
+>
+  <div class="mx-auto max-w-5xl">
+    <p class="font-hand text-2xl text-brand sm:text-3xl">Cómo se hace</p>
+    <h2 class="text-worn mt-2 text-[14vw] leading-none text-ink sm:text-[10vw] lg:text-[8rem]">
+      Cuatro pasos
+    </h2>
+
+    <div class="relative mt-14 sm:mt-20">
+      <!-- El hilo. Queda detrás de los puntos, que lo tapan al pasar. -->
+      <svg
+        class="pointer-events-none absolute left-0 top-0 h-full w-10 sm:w-14"
+        viewBox="0 0 40 1000"
+        preserveAspectRatio="none"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          data-anim="thread"
+          d="M20 0 C34 120, 6 240, 20 360 C34 480, 6 600, 20 720 C34 840, 6 920, 20 1000"
+          stroke="var(--color-brand)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-dasharray="0 9999"
+          vector-effect="non-scaling-stroke"
+        />
+      </svg>
+
+      <ol class="space-y-14 sm:space-y-20">
+        @for (step of steps; track step.name; let i = $index) {
+          <li
+            data-anim="step"
+            class="relative -translate-x-3 pl-16 opacity-0 sm:pl-24 motion-reduce:translate-x-0 motion-reduce:opacity-100"
+          >
+            <!--
+              El punto sobre el hilo. `bg-bone` no es decorativo: tapa la línea
+              por detrás para que el trazo no se vea cruzando el círculo.
+            -->
+            <span
+              class="absolute left-0 top-1 flex h-10 w-10 items-center justify-center rounded-full border-2 border-brand bg-bone font-display text-lg text-brand sm:h-14 sm:w-14 sm:text-2xl"
+              aria-hidden="true"
+            >
+              {{ i + 1 }}
+            </span>
+
+            <h3 class="font-display text-3xl uppercase leading-none sm:text-4xl">
+              {{ step.name }}
+            </h3>
+            <p class="mt-3 max-w-xl text-lg leading-relaxed sm:text-xl">
+              {{ step.detail }}
+            </p>
+          </li>
+        }
+      </ol>
+    </div>
+  </div>
+</section>

@@ -69,6 +69,7 @@ def mezclar(a: str, b: str, t: float) -> str:
 BONE = "#EDE9DF"
 INK = "#1A1919"
 BRAND = "#C4231F"
+INK_SOFT = "#595754"   # texto atenuado SOLIDO; ver la nota en PARES_BASE
 
 # (etiqueta, fondo, texto emparejado) -- el tercer valor es el token
 # `--color-heat-N-ink` que acompana a cada nivel en styles.css.
@@ -86,6 +87,15 @@ PARES_BASE = [
     ("bone sobre ink",          BONE, INK,   UMBRAL_NORMAL),
     ("bone sobre brand",        BONE, BRAND, UMBRAL_NORMAL),
     ("ink sobre brand (titular)", INK, BRAND, UMBRAL_GRANDE),
+
+    # Texto atenuado del formulario (el placeholder del CTA).
+    #
+    # Nacio de un error real: estaba escrito como `text-ink/60`, que PARECE lo
+    # mismo y da 4,32:1 -- por debajo de AA. El script no lo habria cazado nunca
+    # porque mide colores solidos y el par que conocia era "ink sobre bone",
+    # que pasa de sobra. Es justo la trampa que describe la regla de no usar
+    # opacidad sobre texto. Al 70 % en solido da 5,94 y entra por derecho.
+    ("ink-soft sobre bone (placeholder)", INK_SOFT, BONE, UMBRAL_NORMAL),
 ]
 
 

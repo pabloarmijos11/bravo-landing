@@ -43,6 +43,16 @@ modo oscuro**, ambos deliberados — ver «Decisiones registradas».
 `~/.claude/skills/angular-developer/references/signal-forms.md` antes de tocar
 cualquier formulario.
 
+Tres cosas que costaron en la fase 5 y que la referencia menciona de pasada:
+
+1. **Hay que importar la directiva `FormField`** en el componente. Sin ella el
+   compilador dice `NG8002: Can't bind to 'formField' since it isn't a known
+   property of 'input'`, que suena a atributo mal escrito y es un import que
+   falta.
+2. **Llamar al campo para llegar a su estado:** `form.email().valid()`, nunca
+   `form.email.valid()`. Y en la raíz, `form().invalid()`.
+3. **No es dependencia nueva, pero sí son ~19 kB** — ver la tabla de pesos.
+
 ## Comandos
 
 ```bash
@@ -141,6 +151,19 @@ Medido en este proyecto, transferencia estimada del build de producción:
 |---|---|---|
 | Sin GSAP en el bundle (fase 1) | 36,00 kB | — |
 | GSAP core + `ScrollTrigger` (fase 2) | 83,90 kB | **+47,90 kB** |
+| Escala de picante (fase 4) | 84,95 kB | +1,05 kB |
+| Origen (fase 5) | 85,92 kB | +0,97 kB |
+| `DrawSVGPlugin` (fase 5) | 87,27 kB | **+1,35 kB** |
+| Signal Forms, el CTA (fase 5) | 106,14 kB | **+18,87 kB** |
+
+**Signal Forms cuesta casi 19 kB, y eso el plan no lo había estimado.** Es, con
+diferencia, lo más caro añadido después de GSAP: un único campo de correo trae
+consigo `@angular/forms` entero. Era una decisión ya tomada —el proyecto quería
+practicar Signal Forms— pero conviene saber el precio: si un día hiciera falta
+recortar, ese formulario es el primer sitio donde mirar.
+
+Quedan **unos 24 kB** hasta el umbral de 130 para `Draggable` + `InertiaPlugin`
+de la fase 6. Entra, pero ya sin holgura: hay que medir al añadir cada uno.
 
 **El plan estimaba +34 kB y se quedó corto en un 40 %.** El umbral del proyecto es
 130 kB, así que quedan unos 46 kB de margen para `DrawSVGPlugin` (fase 5),
@@ -252,6 +275,44 @@ verdad:
 getComputedStyle(el).getPropertyValue('--color-heat-2').trim();   // '#e8b31f'
 ```
 
+### `scrub` o `toggleActions`: el criterio
+
+No es cuestión de gusto, y las dos secciones de la fase 5 lo dejaron claro:
+
+| La animación… | Va con | Ejemplo |
+|---|---|---|
+| **recorre** un estado que el scroll controla | `scrub: true` | el pin del hero, la escala, la línea del proceso |
+| solo **aparece** una vez | `toggleActions` | el texto de Origen, los pasos, el CTA |
+
+Atar un texto a `scrub` obliga a seguir moviendo la rueda para terminar de
+verlo, que es lo contrario de lo que quiere alguien que ha llegado a leer.
+
+**Y de ahí sale un error que solo se ve en el navegador:** en el proceso, los
+cuatro pasos se repartieron por posiciones de una timeline con `scrub`
+(0, 0,25, 0,5, 0,75). El reparto es por **progreso de la timeline**, no por dónde
+está cada elemento en pantalla. Medido: el cuarto paso ya estaba a 619 px de un
+viewport de 770 —el usuario lo tenía delante— y su animación no entraba hasta el
+80 % del recorrido. Se veía un hueco vacío.
+
+La línea (que recorre) y los pasos (que aparecen) acabaron con **un trigger cada
+uno**. Esto no contradice el anti-patrón de «un `ScrollTrigger` por nivel» de la
+escala: allí los cinco niveles son estados de una secuencia continua y triggers
+separados se desincronizan; aquí son elementos independientes que solo tienen
+que hacerse visibles.
+
+### SVG que se estiran: dos atributos que van juntos
+
+Para un SVG que debe adaptarse a un contenedor de alto o ancho variable:
+
+- **`preserveAspectRatio="none"`** — deja que se deforme hasta llenar la caja.
+  Sin él mantiene su proporción y se queda corto o se sale.
+- **`vector-effect="non-scaling-stroke"`** — su acompañante obligatorio **cuando
+  hay trazo**. Al estirar en un solo eje, el grosor se estira con él y la línea
+  sale más gruesa en vertical que en horizontal.
+
+El segundo **no hace falta si la forma es un relleno** y no un trazo: las curvas
+entre secciones son siluetas rellenas y se deforman sin que se note.
+
 ### Staggers cortos
 
 **45–125 ms.** El instinto de poner 300 ms "para que se note" es justo lo que hace
@@ -279,6 +340,13 @@ que una animación parezca barata. La referencia usa `0.045`–`0.125`.
    colores sólidos: el texto queda por debajo de AA *aunque el script diga que
    pasa*. Si hace falta un texto secundario, va un token de color más suave, no
    opacidad. Se detectó en la fase 1, sobre `heat-3` y `heat-4`.
+
+   **Confirmado con números en la fase 5**, donde el placeholder del CTA se
+   escribió como `placeholder:text-ink/60`: da **4,32:1**, por debajo de AA. El
+   script no lo habría cazado jamás, porque el par que conoce es «ink sobre
+   bone» y ese pasa con 14,47. Por eso existe ahora **`--color-ink-soft`**
+   (#595754, el mismo gris al 70 % en sólido, 5,94:1) y está en los pares
+   canónicos del script. Texto atenuado = token propio, nunca una barra.
 6. **Nada de emojis como iconos.** SVG de Heroicons o Lucide.
 7. **Ningún enlace a `href="#"`.** Solo va lo que tenga destino real — hallazgo de
    la auditoría Rams de `altura-landing`, donde 15 enlaces del pie quedaron muertos.
@@ -546,6 +614,22 @@ compila.** En `altura-landing` tres síntomas simultáneos —sin scroll, modo o
 roto, nav muerto— resultaron ser `ng serve` caído sirviendo un build anterior. Se
 encontró revisando el log del proceso en segundo plano, no lanzando otro build.
 
+**La pestaña automatizada congela las animaciones por tiempo.** Al verificar con
+el navegador controlado, `document.visibilityState` es `"hidden"` y el navegador
+**pausa `requestAnimationFrame` del todo** — medido: 0 frames en 600 ms. La
+consecuencia práctica divide las animaciones en dos grupos:
+
+| Tipo | ¿Se puede verificar ahí? | Por qué |
+|---|---|---|
+| `scrub` | **Sí** | las actualiza el evento de scroll |
+| por tiempo (`duration`, `stagger`) | **No** | necesitan el ticker de `rAF`, que está parado |
+
+Un stagger se queda congelado a mitad y parece un bug del código cuando no lo
+es. Pasó en la fase 5 con Origen, el proceso y el CTA, con los mismos valores de
+opacidad leídos con 1,2 s de diferencia. **Antes de diagnosticar un reveal
+«roto», comprobar si `rAF` corre.** Lo que sí se puede verificar siempre es el
+estado final y la lógica: validaciones, clases generadas, enlaces, contraste.
+
 **Para comprobar un `ScrollTrigger`, usar scroll real, no `window.scrollTo`.** Un
 salto programático justo después de montar el componente da un falso negativo: la
 animación parece no dispararse porque los triggers recién creados todavía no han
@@ -593,7 +677,21 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       el «rebote» del texto eran el mismo pin posicionado por JS (ver arriba).
 
       Pendiente de comprobar: `reduce` emulado de verdad y móvil real.
-- [ ] **Fase 5** — origen, proceso, CTA, footer
+- [x] **Fase 5** — origen, proceso, CTA y pie, más las curvas orgánicas entre
+      secciones. Entra `DrawSVGPlugin` (la línea del proceso) y Signal Forms.
+      Cae la página temporal de verificación de la fase 1: ya hay secciones
+      reales de sobra para dar recorrido a los `pin`.
+
+      Verificado: los cuatro estados del formulario (vacío, error con sus dos
+      mensajes, carga con el botón deshabilitado, éxito con `role="status"`);
+      los 4 enlaces del pie apuntando a `id` que existen y **cero `href="#"`**;
+      sin scroll horizontal; contraste en verde incluido el token nuevo
+      `ink-soft`; **106,18 kB**.
+
+      Pendiente de comprobar fuera de este entorno, porque la pestaña
+      automatizada congela las animaciones por tiempo (ver arriba): los reveals
+      con stagger de Origen, proceso y CTA. Y `reduce` y móvil real, que siguen
+      pendientes desde la fase 4.
 - [ ] **Fase 6** — carrusel de productos
 - [ ] **Fase 7** — pulido y auditoría
 

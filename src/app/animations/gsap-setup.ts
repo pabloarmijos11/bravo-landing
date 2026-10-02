@@ -1,4 +1,5 @@
 import { gsap } from 'gsap';
+import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /**
@@ -17,7 +18,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
  * Aquí solo se registra lo que ya se usa. Registrar un plugin lo mete en el
  * bundle, así que los demás se añaden en la fase que los necesite:
  *
- *   DrawSVGPlugin  -> fase 5 (la línea del proceso)
+ *   DrawSVGPlugin  -> AÑADIDO en la fase 5, para la línea del proceso.
  *   Draggable      -> fase 6 (el carrusel)
  *   InertiaPlugin  -> fase 6. OJO: sin registrarlo, `inertia: true` se ignora
  *                     en silencio, sin error ni aviso.
@@ -28,7 +29,7 @@ let registered = false;
 export function setupGsap(): void {
   if (registered) return;
 
-  gsap.registerPlugin(ScrollTrigger);
+  gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin);
 
   /*
     ⚠️ DESACTIVADO A PROPÓSITO — ver abajo antes de reactivarlo.

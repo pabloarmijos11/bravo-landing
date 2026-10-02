@@ -42,3 +42,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Cache de Python, que genera scripts/contraste.py al importarse
+__pycache__/

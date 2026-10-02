@@ -1,0 +1,85 @@
+<!--
+  Origen.
+
+  Sin `pin` y sin alto fijo: la sección crece con su contenido. Es la primera
+  del proyecto que se comporta como una sección normal, y por eso tampoco
+  necesita fondo opaco propio ni las precauciones del pin.
+
+  El estado inicial del reveal (`opacity-0` + `translate-y-4`) va en CSS y no en
+  un `from()` de GSAP: con `from`, el navegador pinta el elemento en su sitio y
+  GSAP lo esconde un frame después, lo que produce un destello.
+
+  Las variantes `motion-reduce:` son la red de seguridad. La de verdad la pone
+  `gsap.set` en la rama MOTION_REDUCED, pero si el JS fallara, con solo CSS el
+  texto quedaría invisible para siempre — y un texto que no se ve es peor que
+  un texto sin animar.
+-->
+<section
+  #root
+  id="origen"
+  class="relative bg-bone px-6 py-24 sm:px-12 sm:py-32 lg:px-20"
+>
+  <div class="mx-auto max-w-5xl">
+    <p
+      data-anim="reveal"
+      class="translate-y-4 font-hand text-2xl text-brand opacity-0 sm:text-3xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      De dónde viene
+    </p>
+
+    <!--
+      El titular va ligeramente rotado. Es el punto 7 de lo que se conserva de
+      la referencia: nada perfectamente alineado. Un grado y medio basta — a
+      partir de tres ya parece un error de maquetación.
+    -->
+    <h2
+      data-anim="reveal"
+      class="text-worn mt-2 origin-left translate-y-4 text-[15vw] leading-none text-ink opacity-0 [transform:rotate(-1.5deg)] sm:text-[11vw] lg:text-[9rem] motion-reduce:opacity-100"
+    >
+      El ají ya estaba
+    </h2>
+
+    <div class="mt-12 grid gap-10 sm:mt-16 sm:grid-cols-2 sm:gap-14">
+      <p
+        data-anim="reveal"
+        class="translate-y-4 text-lg leading-relaxed opacity-0 sm:text-xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+      >
+        No lo trajo nadie. En kichwa se dice <em class="not-italic font-hand text-2xl">uchu</em>,
+        en tsáfiki <em class="not-italic font-hand text-2xl">tun</em> y en awapit
+        <em class="not-italic font-hand text-2xl">chuil</em>: tres nombres para lo
+        mismo, en tres lenguas que nunca necesitaron traducirlo.
+      </p>
+
+      <p
+        data-anim="reveal"
+        class="translate-y-4 text-lg leading-relaxed opacity-0 sm:text-xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+      >
+        En Ecuador se cultivan alrededor de veinte variedades, repartidas entre
+        cinco especies distintas del género <em>Capsicum</em>. Da fruto todo el
+        año, con más carga en los meses de lluvia, en diecisiete provincias
+        — de Esmeraldas a Loja.
+      </p>
+    </div>
+
+    <!--
+      Tres datos sueltos. Van en display grande porque son lo que alguien se
+      lleva de la sección si no lee los párrafos; el orden está pensado para
+      que se entiendan sin contexto.
+    -->
+    <dl
+      class="mt-14 grid gap-8 border-t-2 border-ink pt-8 sm:mt-20 sm:grid-cols-3"
+    >
+      @for (fact of facts; track fact.label) {
+        <div
+          data-anim="reveal"
+          class="translate-y-4 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100"
+        >
+          <dt class="font-display text-5xl leading-none text-brand sm:text-6xl">
+            {{ fact.value }}
+          </dt>
+          <dd class="mt-2 text-base sm:text-lg">{{ fact.label }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+</section>

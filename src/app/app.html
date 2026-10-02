@@ -1,54 +1,28 @@
 <!-- Sección 1 — hero. -->
 <app-hero />
 
-<!-- Sección 2 — la escala de picante. -->
+<!--
+  Sección 2 — origen.
+
+  Va aquí y no más abajo a propósito: el hero renunció al copy descriptivo
+  porque su titular ocupa la pantalla entera, así que lo primero que debe
+  llegar después es el contexto que al hero le falta.
+-->
+<app-origin />
+
+<!-- Sección 3 — la escala de picante. -->
 <app-heat-scale />
 
 <!--
-  TEMPORAL — página de verificación del sistema de diseño (fase 1).
-
-  Va cayendo a medida que entran las secciones reales. Mientras tanto cumple
-  una función concreta: dar recorrido de scroll por debajo de las secciones
-  pineadas, que su `pin` necesita para poder soltarse.
-
-  El bloque de la escala de picante ya se retiró: lo sustituye la sección real
-  de arriba, que usa los mismos tokens emparejados.
+  Sección 4 — el carrusel de productos entra aquí en la fase 6, entre la escala
+  y el proceso: después de saber a qué sabe cada nivel y antes de contar cómo
+  se hace.
 -->
 
-<main class="mx-auto max-w-5xl px-6 py-16">
+<!-- Sección 5 — cómo se hace. -->
+<app-process />
 
-  <!-- Colores base -->
-  <section class="mb-16">
-    <h2 class="mb-4 text-2xl">Base</h2>
-    <div class="grid grid-cols-3 gap-4">
-      <div class="rounded border border-ink/20 bg-bone p-6">
-        <span class="text-ink">bone · ink encima</span>
-      </div>
-      <div class="rounded bg-ink p-6">
-        <span class="text-bone">ink · bone encima</span>
-      </div>
-      <div class="rounded bg-brand p-6">
-        <span class="text-bone">brand · bone encima</span>
-      </div>
-    </div>
-  </section>
+<!-- Sección 6 — suscripción. -->
+<app-cta />
 
-  <!--
-    Titular con y sin textura, uno encima del otro.
-    El nivel de desgaste se eligió comparando cuatro variantes en paralelo;
-    ver la tabla de overrides en design-system/bravo/MASTER.md.
-  -->
-  <section>
-    <h2 class="mb-6 text-2xl">Textura del titular</h2>
-    <div class="space-y-6" style="font-family: var(--font-display)">
-      <div>
-        <p class="mb-1 font-body text-xs uppercase tracking-widest">Sin textura</p>
-        <p class="text-7xl uppercase">Bravo picante</p>
-      </div>
-      <div>
-        <p class="mb-1 font-body text-xs uppercase tracking-widest">Con textura</p>
-        <p class="text-worn text-7xl uppercase">Bravo picante</p>
-      </div>
-    </div>
-  </section>
-</main>
+<app-site-footer />

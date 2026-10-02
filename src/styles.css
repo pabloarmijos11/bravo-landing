@@ -17,6 +17,13 @@
   --color-ink: #1a1919;    /* texto y titulares sobre bone */
   --color-brand: #c4231f;  /* rojo de marca */
 
+  /* Texto atenuado SOLIDO, para placeholders y textos secundarios.
+     Existe por la regla de no usar nunca opacidad sobre texto: `text-ink/60`
+     parece lo mismo y da 4,32:1 -- por debajo de AA-- mientras el script, que
+     mide colores solidos, seguiria diciendo que `ink` sobre `bone` pasa.
+     Este valor es ese mismo gris pero al 70 %, y da 5,94:1. Verificado. */
+  --color-ink-soft: #595754;
+
   /* --- Escala de picante -------------------------------------------------
      Cada nivel va emparejado con el color de texto que SI contrasta encima.
      El punto de cambio esta entre heat-3 y heat-4; verificado por calculo en

@@ -1,0 +1,179 @@
+<!--
+  CTA.
+
+  Fondo `brand` con texto `bone`: 4,80:1, verificado por scripts/contraste.py.
+  Es el par más justo del sistema, así que aquí NO cabe ningún `opacity-*`
+  sobre texto — bajaría el ratio real por debajo de AA aunque el script, que
+  mide colores sólidos, siga diciendo que pasa.
+
+  El input invierte la relación (fondo hueso, texto tinta) porque un campo de
+  texto tiene que leerse como un campo de texto: hundido respecto a la
+  superficie, no otro bloque rojo con borde.
+-->
+<section
+  #root
+  id="suscripcion"
+  class="relative overflow-hidden bg-brand px-6 pb-24 pt-32 text-bone sm:px-12 sm:pb-32 sm:pt-44 lg:px-20"
+>
+  <!--
+    Curva de entrada. Es el punto 5 de lo que se conserva de la referencia:
+    las secciones no se cortan con una línea recta.
+
+    `preserveAspectRatio="none"` es obligatorio aquí: la curva tiene que
+    estirarse hasta el ancho real de la pantalla, sea cual sea. Al contrario que
+    en la línea del proceso, aquí la deformación NO importa —es una silueta
+    rellena, no un trazo— así que no hace falta `non-scaling-stroke`.
+
+    El relleno es `bone`, el color de la sección de ARRIBA: la curva no dibuja
+    el borde del rojo, dibuja lo que el hueso invade sobre él.
+
+    El `pt-32` del section existe por esto: sin él, el texto quedaría debajo de
+    la curva.
+  -->
+  <svg
+    class="pointer-events-none absolute inset-x-0 top-0 h-12 w-full sm:h-20"
+    viewBox="0 0 1440 80"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M0 0 L1440 0 L1440 34 C1180 2, 980 74, 700 52 C430 31, 250 70, 0 40 Z"
+      fill="var(--color-bone)"
+    />
+  </svg>
+
+  <div class="mx-auto max-w-3xl">
+    <p
+      data-anim="reveal"
+      class="translate-y-4 font-hand text-2xl opacity-0 sm:text-3xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      Se hace por tandas
+    </p>
+
+    <h2
+      data-anim="reveal"
+      class="text-worn mt-2 translate-y-4 text-[13vw] leading-none opacity-0 sm:text-[9vw] lg:text-[7rem] motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      Avísame
+    </h2>
+
+    <p
+      data-anim="reveal"
+      class="mt-6 max-w-xl translate-y-4 text-lg leading-relaxed opacity-0 sm:text-xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      Cada fermentación tarda entre dos y cuatro semanas, así que no hay stock
+      permanente. Deja tu correo y te escribimos cuando salga la siguiente.
+    </p>
+
+    <!--
+      ESTADO 4 — enviado. Sustituye al formulario en lugar de acompañarlo: si
+      el campo siguiera ahí, no quedaría claro si hay que volver a enviarlo.
+
+      `role="status"` hace que un lector de pantalla lo anuncie al aparecer sin
+      robar el foco. Sin esto, alguien que navegue a ciegas no se entera de que
+      el envío funcionó.
+    -->
+    @if (done()) {
+      <p
+        role="status"
+        class="mt-10 flex items-start gap-3 border-2 border-bone p-5 text-lg sm:text-xl"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          class="mt-1 shrink-0"
+        >
+          <path
+            d="M20 6 9 17l-5-5"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Apuntado. Te escribimos cuando salga la próxima tanda.
+      </p>
+    } @else {
+      <!--
+        `novalidate` desactiva los globos del navegador para que los errores
+        los pinte el formulario y se vean igual en todos: los nativos cambian
+        de aspecto y de idioma según el navegador.
+      -->
+      <form
+        data-anim="reveal"
+        novalidate
+        class="mt-10 translate-y-4 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100"
+        (submit)="$event.preventDefault(); onSubmit()"
+      >
+        <label for="cta-email" class="block font-display text-xl uppercase">
+          Tu correo
+        </label>
+
+        <div class="mt-3 flex flex-col gap-3 sm:flex-row">
+          <!--
+            Nada de `[disabled]` ni `[value]` aquí: con `[formField]` los
+            gestiona Signal Forms, y ponerlos a mano entra en conflicto.
+
+            `aria-describedby` conecta el campo con sus errores para que un
+            lector de pantalla los lea al entrar en él, no solo al verlos.
+          -->
+          <input
+            id="cta-email"
+            type="email"
+            autocomplete="email"
+            placeholder="nombre@correo.com"
+            [formField]="subscriptionForm.email"
+            [attr.aria-invalid]="subscriptionForm.email().touched() && subscriptionForm.email().invalid()"
+            aria-describedby="cta-email-error"
+            class="w-full rounded-none border-2 border-bone bg-bone px-4 py-3 text-lg text-ink placeholder:text-ink-soft focus:outline-none focus:ring-4 focus:ring-bone/40 sm:flex-1"
+          />
+
+          <button
+            type="submit"
+            [disabled]="sending()"
+            class="rounded-none border-2 border-bone bg-ink px-7 py-3 font-display text-xl uppercase text-bone transition-opacity focus:outline-none focus:ring-4 focus:ring-bone/40 disabled:cursor-wait"
+          >
+            <!-- ESTADO 3 — enviando. -->
+            {{ sending() ? 'Enviando…' : 'Avisadme' }}
+          </button>
+        </div>
+
+        <!--
+          ESTADO 2 — error. Solo tras tocar el campo: señalar un error en un
+          formulario que aún no se ha rellenado es regañar a alguien por no
+          haber hecho algo todavía.
+
+          `aria-live="polite"` lo anuncia cuando aparece sin interrumpir.
+        -->
+        <div id="cta-email-error" aria-live="polite">
+          @if (subscriptionForm.email().touched() && subscriptionForm.email().invalid()) {
+            @for (error of subscriptionForm.email().errors(); track error.kind) {
+              <p class="mt-3 flex items-start gap-2 text-base">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                  class="mt-0.5 shrink-0"
+                >
+                  <path
+                    d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                {{ error.message }}
+              </p>
+            }
+          }
+        </div>
+      </form>
+    }
+  </div>
+</section>
