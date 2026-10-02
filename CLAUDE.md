@@ -155,6 +155,8 @@ Medido en este proyecto, transferencia estimada del build de producción:
 | Origen (fase 5) | 85,92 kB | +0,97 kB |
 | `DrawSVGPlugin` (fase 5) | 87,27 kB | **+1,35 kB** |
 | Signal Forms, el CTA (fase 5) | 106,14 kB | **+18,87 kB** |
+| `Draggable` + el carrusel (fase 6) | 118,95 kB | **+12,73 kB** |
+| `InertiaPlugin` (fase 6) | 121,30 kB | **+2,48 kB** |
 
 **Signal Forms cuesta casi 19 kB, y eso el plan no lo había estimado.** Es, con
 diferencia, lo más caro añadido después de GSAP: un único campo de correo trae
@@ -162,13 +164,17 @@ consigo `@angular/forms` entero. Era una decisión ya tomada —el proyecto quer
 practicar Signal Forms— pero conviene saber el precio: si un día hiciera falta
 recortar, ese formulario es el primer sitio donde mirar.
 
-Quedan **unos 24 kB** hasta el umbral de 130 para `Draggable` + `InertiaPlugin`
-de la fase 6. Entra, pero ya sin holgura: hay que medir al añadir cada uno.
+**El plan estimaba +34 kB para GSAP y se quedó corto en un 40 %**, y además no había
+previsto los 19 kB de Signal Forms. Con la fase 6 cerrada el total es **121,30 kB**
+contra un umbral de 130: quedan **8,70 kB**.
 
-**El plan estimaba +34 kB y se quedó corto en un 40 %.** El umbral del proyecto es
-130 kB, así que quedan unos 46 kB de margen para `DrawSVGPlugin` (fase 5),
-`Draggable` e `InertiaPlugin` (fase 6). Debería entrar, pero hay que medir al añadir
-cada uno y no darlo por hecho.
+Dos consecuencias prácticas de ese margen tan estrecho:
+
+- La fase 7 es pulido y **no debería añadir JavaScript**. Si lo añade, hay que medir
+  antes de escribirlo, no después.
+- `Draggable` cuesta cuatro veces más que `InertiaPlugin` (12,73 contra 2,48, y en
+  los 12,73 va también el componente entero con su copy). La intuición de que el
+  plugin «extra» de física sería el caro es al revés.
 
 Por eso `gsap-setup.ts` registra **solo lo que ya se usa**: cada plugin registrado
 entra en el bundle aunque no se ejecute.
@@ -275,6 +281,17 @@ verdad:
 getComputedStyle(el).getPropertyValue('--color-heat-2').trim();   // '#e8b31f'
 ```
 
+**Pero la restricción es del tween, no del token.** Lo que decide es quién consume el
+valor: si acaba en una propiedad CSS que el navegador resuelve —un binding de estilo,
+un atributo—, `var(--token)` escrito tal cual es correcto y es lo que se debe usar.
+Solo hay que resolverlo a un color real cuando lo va a **interpolar** GSAP.
+
+```html
+<!-- correcto: lo resuelve el navegador -->
+<app-bottle [fill]="'var(--color-heat-3)'" />
+<span [style.background-color]="product.fill"></span>
+```
+
 ### `scrub` o `toggleActions`: el criterio
 
 No es cuestión de gusto, y las dos secciones de la fase 5 lo dejaron claro:
@@ -318,6 +335,128 @@ entre secciones son siluetas rellenas y se deforman sin que se note.
 **45–125 ms.** El instinto de poner 300 ms "para que se note" es justo lo que hace
 que una animación parezca barata. La referencia usa `0.045`–`0.125`.
 
+### Cuando animar ES la funcionalidad, `reduce` no puede desactivarlo
+
+La regla del proyecto es que con `prefers-reduced-motion: reduce` el contenido se ve
+en su **estado final** y no se anima. El carrusel de la fase 6 es la primera
+excepción, y el motivo es una distinción que conviene tener clara:
+
+| El movimiento es… | Con `reduce` |
+|---|---|
+| decoración (un reveal, un pin) | no se crea nada; estado final y listo |
+| **la forma de llegar al contenido** | se crea igual, sin inercia y con saltos secos |
+
+Si el `Draggable` se creara solo en la rama `MOTION_OK`, con `reduce` el carrusel
+quedaría inerte y **tres de las cinco salsas serían inalcanzables**. Así que se crea
+en las dos ramas y lo que cambia es `inertia` y si los saltos llevan tween.
+
+La pregunta para decidirlo no es «¿esto se mueve?» sino **«¿se puede llegar al
+contenido sin esto?»**.
+
+### Un carril movido por `transform` no es un contenedor de scroll
+
+El fallo de accesibilidad que tiene casi todo carrusel hecho con GSAP, y que no se
+ve hasta que se prueba con el teclado.
+
+`Draggable` desplaza el carril con `translateX`. No hay scroll nativo, y por tanto
+**el navegador no puede traer a la vista un elemento enfocado**: en un contenedor con
+scroll real, tabular a algo fuera de vista lo desplaza solo; aquí el foco se va a una
+tarjeta que está fuera de la pantalla y no ocurre nada. Quien navega con teclado
+pierde el foco de vista por completo.
+
+Hay que hacerlo a mano: cada tarjeta avisa al recibir el foco y el carrusel se
+desplaza hasta ella.
+
+```html
+<li tabindex="0" (focus)="onCardFocus(i)"> … </li>
+```
+
+Y por lo mismo, la ventana que recorta lleva `tabindex="0"` con `role="region"`: una
+zona desplazable que no se puede enfocar no se puede recorrer con el teclado.
+
+**No se mezcla con `overflow-x: auto`.** Serían dos mecanismos de desplazamiento
+compitiendo por el mismo gesto — el defecto que el proyecto se negó a copiar de la
+referencia con sus dos motores de smooth scroll.
+
+### El callback de `mm.add()` puede devolver su limpieza
+
+Verificado en el código de GSAP, no en la documentación: `Context.add` hace
+`_isFunction(result) && self._r.push(result)`, y `_r` son las *returned/cleanup
+functions* que se ejecutan en `revert()`.
+
+Sirve para lo que GSAP **no** puede rastrear por su cuenta — un `addEventListener`
+propio, por ejemplo el `resize` que el carrusel necesita para volver a medirse:
+
+```ts
+mm.add(MOTION_OK, () => {
+  window.addEventListener('resize', onResize);
+  return () => window.removeEventListener('resize', onResize);
+});
+```
+
+Lo que sí rastrea solo: **`Draggable` se registra en el contexto activo al
+construirse** (`_context(this)` en `Draggable.js`, línea 2623), igual que los
+`ScrollTrigger`. Así que `mm.revert()` ya lo mata y llamar a `kill()` además sería la
+misma capa redundante que se evitó al elegir `matchMedia` sobre `gsap.context()`.
+
+### Draggable: tres cosas que fallan en silencio
+
+1. **`inertia: true` sin `InertiaPlugin` registrado se ignora**, sin error ni aviso.
+   El carrusel arrastra, frena en seco al soltar, y nada delata que falta un plugin.
+2. **`onThrowUpdate` y `onThrowComplete` solo existen con inercia.** Con
+   `inertia: false` el `snap` recoloca el carril y, si la sincronización del estado
+   vive solo en esos callbacks, el contador se queda marcando la tarjeta anterior. La
+   que vale para los dos modos es **`onDragEnd` leyendo `drag.endX`** — que además,
+   con inercia, es el destino ya ajustado por el `snap`, así que el contador se
+   adelanta en vez de perseguir al carril.
+3. **`allowNativeTouchScrolling` vale `true` por defecto con `type: 'x'`**, y hay que
+   dejarlo así: es lo que permite que un dedo moviéndose en vertical haga scroll de la
+   página en vez de quedar atrapado. Un carrusel que secuestra el scroll vertical es
+   el defecto más molesto del patrón en móvil.
+
+### El número de tarjetas no es el número de posiciones
+
+El error de diseño más fácil de cometer en un carrusel, y no se ve si solo se
+prueba en una pantalla estrecha.
+
+Con cinco tarjetas, lo evidente es dejar que el índice vaya de 0 a 4. Está mal en
+cuanto caben varias a la vez: **el carril llega a su tope antes de agotar los
+índices**. Medido en Chrome a 1536 px — ventana de 1024, carril de 1728, paso de
+352: el tope está en −704, o sea DOS pasos. Pulsar «siguiente» una tercera y una
+cuarta vez subía el contador a «4 / 5» y «5 / 5» **sin mover nada**, y al volver
+había otras dos pulsaciones muertas.
+
+Lo que manda es cuántos pasos caben en el recorrido:
+
+```ts
+maxIndex = Math.ceil(-minX / step);              // 2 aquí; 4 en móvil
+perView  = Math.round(viewportWidth / step);     // 3 aquí; 1 en móvil
+```
+
+Y el contador entonces no puede ser «3 / 5», que con el botón ya deshabilitado
+parece que faltan dos salsas por ver cuando están las dos en pantalla. Va un
+**rango**: «1–3 de 5», «3–5 de 5». Cuando solo cabe una tarjeta, el rango sobra.
+
+### Medir el paso del DOM, no duplicar los números de Tailwind
+
+El desplazamiento de una tarjeta a la siguiente depende de su ancho y del hueco, que
+son utilidades (`w-[78vw] sm:w-80`, `gap-5 sm:gap-8`) y cambian con el breakpoint.
+Escribir esos números en el TypeScript los deja desincronizados en cuanto alguien
+retoca el espaciado, **y sin ningún error que lo delate**.
+
+```ts
+this.step = cards[1].offsetLeft - cards[0].offsetLeft;
+```
+
+Hay que remedir al redimensionar, porque el ancho va en `vw`.
+
+### Un signal descarta el valor repetido, así que `set()` por frame es seguro
+
+El índice del carrusel se actualiza desde `onDrag`, es decir, en cada frame del
+arrastre. No hace falta protegerlo con un `if`: un signal compara con lo que ya tiene
+y no notifica si es igual, así que Angular se entera cuando cambia el **número de
+tarjeta**, no sesenta veces por segundo.
+
 ---
 
 ## Reglas de código no negociables
@@ -347,6 +486,14 @@ que una animación parezca barata. La referencia usa `0.045`–`0.125`.
    bone» y ese pasa con 14,47. Por eso existe ahora **`--color-ink-soft`**
    (#595754, el mismo gris al 70 % en sólido, 5,94:1) y está en los pares
    canónicos del script. Texto atenuado = token propio, nunca una barra.
+
+   **Única excepción, y es de la norma, no del proyecto:** un control
+   **deshabilitado** puede bajar de 4,5:1. WCAG excluye explícitamente los
+   componentes de interfaz inactivos del requisito (SC 1.4.3), y ahí lo que hace
+   falta es justo lo contrario de destacar. Los botones del carrusel en sus topes
+   usan `disabled:text-ink-soft disabled:border-ink-soft` sobre `heat-5`. Vale
+   solo con el atributo `disabled` de verdad puesto — no para algo que *parezca*
+   inactivo.
 6. **Nada de emojis como iconos.** SVG de Heroicons o Lucide.
 7. **Ningún enlace a `href="#"`.** Solo va lo que tenga destino real — hallazgo de
    la auditoría Rams de `altura-landing`, donde 15 enlaces del pie quedaron muertos.
@@ -436,6 +583,7 @@ src/
    ├─ app.html                    apila las secciones en orden
    ├─ components/
    │  └─ hero/ origin/ heat-scale/ products/ process/ cta/ site-footer/
+   │     products/                carrusel arrastrable; bottle/ es su ilustración
    ├─ animations/
    │  ├─ gsap-setup.ts            registro de plugins, una sola vez
    │  └─ motion-scope.ts          gsap.context + matchMedia + DestroyRef
@@ -623,12 +771,35 @@ consecuencia práctica divide las animaciones en dos grupos:
 |---|---|---|
 | `scrub` | **Sí** | las actualiza el evento de scroll |
 | por tiempo (`duration`, `stagger`) | **No** | necesitan el ticker de `rAF`, que está parado |
+| **arrastre con `Draggable`** | **No** | aplica su `transform` por el mismo ticker |
 
 Un stagger se queda congelado a mitad y parece un bug del código cuando no lo
 es. Pasó en la fase 5 con Origen, el proceso y el CTA, con los mismos valores de
 opacidad leídos con 1,2 s de diferencia. **Antes de diagnosticar un reveal
 «roto», comprobar si `rAF` corre.** Lo que sí se puede verificar siempre es el
 estado final y la lógica: validaciones, clases generadas, enlaces, contraste.
+
+**Tres precisiones que costaron una ronda entera en la fase 6**, porque la regla
+de arriba parece más simple de lo que es:
+
+1. **El estado de `rAF` cambia durante la sesión, así que hay que comprobarlo
+   junto a cada medición, no una vez al principio.** Al abrir la pestaña dio
+   `visible` y 36 frames en 600 ms; un rato después, `hidden` con `hasFocus()`
+   en `true` — una combinación que no parece posible y lo es. **Cada acción real
+   del `computer` (un clic, un scroll, una tecla) despierta el ticker un
+   instante**, y eso explica por qué una medición funciona y la siguiente no.
+2. **Un `Draggable` que no se mueve no significa que esté roto.** Se verificó
+   que estaba bien montado por sus huellas en el elemento —`cursor: grab`,
+   `user-select: none` y `touch-action: pan-y`— y no por verlo arrastrar. Esas
+   huellas son síncronas; el movimiento no.
+3. **`.focus()` no dispara el evento `focus` si el documento no tiene el foco.**
+   Una batería de pruebas de foco programáticas dio cinco falsos negativos
+   seguidos. Lo que sí vale es **tabular de verdad** con el `computer`.
+
+De ahí la táctica que sí funcionó: **verificar la lógica por la ruta síncrona.**
+`goTo(i, false)` usa `gsap.set` en vez de `gsap.to`, así que se aplica en el
+acto y permite comprobar toda la aritmética —topes, redondeo, acotado— sin
+depender del ticker. Y de paso es exactamente la ruta que recorre `reduce`.
 
 **Para comprobar un `ScrollTrigger`, usar scroll real, no `window.scrollTo`.** Un
 salto programático justo después de montar el componente da un falso negativo: la
@@ -692,7 +863,49 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       automatizada congela las animaciones por tiempo (ver arriba): los reveals
       con stagger de Origen, proceso y CTA. Y `reduce` y móvil real, que siguen
       pendientes desde la fase 4.
-- [ ] **Fase 6** — carrusel de productos
+- [~] **Fase 6** — carrusel de las cinco salsas con `Draggable` + `InertiaPlugin`,
+      entre la escala y el proceso. Sin `pin`: ya hay dos secciones pineadas y una
+      tercera secuestrando el scroll sería agotador.
+
+      La sección arranca en `bg-heat-5`, el mismo negro en el que termina la
+      escala, así que la costura no se ve; las tarjetas invierten a `bone`
+      porque la botella del habanero es negra y sobre fondo negro desaparecía.
+
+      Verificado sin navegador: **121,30 kB** (+15,21 sobre la fase 5, desglosado
+      en la tabla de pesos); `ng build` limpio; la paleta en verde con el par
+      `bone` sobre `heat-5` (15,39:1) y `ink-soft` sobre `bone` (5,94:1); las
+      utilidades nuevas generadas por Tailwind —incluidas `w-[78vw]`,
+      `focus:ring-brand` y las tres `disabled:*`— y **21 variantes
+      `motion-reduce:`** frente a 18 en la fase 4; los 5 enlaces del pie
+      apuntando a `id` existentes, con `#salsas` ya incluido, y cero `href="#"`.
+
+      Verificado después **en Chrome**, con la extensión ya conectada:
+
+      - El **teclado entero**: flechas 0→1→2 con tope, `Inicio` y `Fin`,
+        `preventDefault` sobre las flechas para que no hagan scroll de página, y
+        las demás teclas sin interceptar.
+      - **El desplazamiento por foco**, que es el arreglo de accesibilidad de
+        esta fase: seis tabulaciones reales desde el botón «siguiente» llevan el
+        foco a «5 de 5: Habanera» y el carrusel pasa solo al índice 2.
+      - **`Draggable` montado y bien configurado**, comprobado por sus huellas en
+        el elemento: `cursor: grab`, `user-select: none` y **`touch-action: pan-y`**
+        — esta última es la prueba de que el gesto vertical del dedo sigue
+        haciendo scroll de la página.
+      - **La aritmética completa** por la ruta síncrona `goTo(i, false)`, que es
+        además la de `reduce`: topes, acotado y vuelta al inicio.
+      - Sin errores en consola. (Hay un *warning* de `DrawSVGPlugin` sobre medir
+        un `path` con `non-scaling-stroke`, pero es de la línea del proceso y
+        viene de la fase 5.)
+
+      **Y ahí apareció el defecto de diseño del índice** descrito arriba, que no
+      se habría visto nunca en una pantalla estrecha.
+
+      **Pendiente de verificar en navegador real:** el arrastre y la inercia
+      —`Draggable` aplica su transform por el ticker de GSAP, que está pausado en
+      la pestaña automatizada—, el responsive (`resize_window` no llegó a
+      cambiar el viewport) y la costura con la escala. Más `reduce` emulado y
+      móvil real, que siguen pendientes desde la fase 4.
+
 - [ ] **Fase 7** — pulido y auditoría
 
 Plan por fases completo en `~/.claude/plans/bravo-landing-fases.md`.

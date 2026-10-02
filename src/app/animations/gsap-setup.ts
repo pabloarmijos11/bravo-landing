@@ -1,5 +1,7 @@
 import { gsap } from 'gsap';
+import { Draggable } from 'gsap/Draggable';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
+import { InertiaPlugin } from 'gsap/InertiaPlugin';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /**
@@ -19,9 +21,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
  * bundle, así que los demás se añaden en la fase que los necesite:
  *
  *   DrawSVGPlugin  -> AÑADIDO en la fase 5, para la línea del proceso.
- *   Draggable      -> fase 6 (el carrusel)
- *   InertiaPlugin  -> fase 6. OJO: sin registrarlo, `inertia: true` se ignora
- *                     en silencio, sin error ni aviso.
+ *   Draggable      -> AÑADIDO en la fase 6, para el carrusel de salsas.
+ *   InertiaPlugin  -> AÑADIDO en la fase 6. OJO: sin registrarlo, el
+ *                     `inertia: true` del Draggable se ignora EN SILENCIO,
+ *                     sin error ni aviso. El carrusel arrastraría, frenaría en
+ *                     seco al soltar y nada delataría que falta un plugin.
  */
 
 let registered = false;
@@ -29,7 +33,7 @@ let registered = false;
 export function setupGsap(): void {
   if (registered) return;
 
-  gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin);
+  gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, Draggable, InertiaPlugin);
 
   /*
     ⚠️ DESACTIVADO A PROPÓSITO — ver abajo antes de reactivarlo.

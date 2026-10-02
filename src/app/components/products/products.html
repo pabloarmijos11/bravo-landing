@@ -1,0 +1,228 @@
+<!--
+  Carrusel de salsas.
+
+  LA SECCIÓN VA EN `heat-5` A PROPÓSITO, Y NO ES UNA ELECCIÓN ESTÉTICA SUELTA.
+
+  La escala de picante termina con el fondo animado en `heat-5`, el negro del
+  habanero. Arrancar aquí con ese mismo token hace que el usuario salga de la
+  escala y entre en el carrusel sin costura, y encima da el contraste que
+  mejor le va al producto: cinco botellas de color sobre negro.
+
+  Es además el par de contraste más holgado del sistema —`heat-5` con
+  `heat-5-ink`, 15,39:1 verificado por script— así que ni el titular ni el
+  cuerpo necesitaron ningún token nuevo.
+
+  Las TARJETAS invierten la relación (`bg-bone text-ink`): son fichas de papel
+  sobre el negro. No es solo estética — con la tarjeta en negro, la botella del
+  habanero, que es negra, habría desaparecido sobre su propio fondo.
+-->
+<section
+  #root
+  id="salsas"
+  class="relative overflow-hidden bg-heat-5 px-6 pb-32 pt-24 text-heat-5-ink sm:px-12 sm:pb-40 sm:pt-32 lg:px-20"
+>
+  <div class="mx-auto max-w-5xl">
+    <p
+      data-anim="reveal"
+      class="translate-y-4 font-hand text-2xl opacity-0 sm:text-3xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      La gama entera
+    </p>
+
+    <h2
+      data-anim="reveal"
+      class="text-worn mt-2 translate-y-4 text-[13vw] leading-none opacity-0 sm:text-[9vw] lg:text-[7rem] motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      Cinco salsas
+    </h2>
+
+    <p
+      data-anim="reveal"
+      class="mt-6 max-w-xl translate-y-4 text-lg leading-relaxed opacity-0 sm:text-xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
+    >
+      Una por cada grado de la escala. Arrástralas con el ratón o el dedo, o
+      muévete con las flechas del teclado.
+    </p>
+
+    <!--
+      CONTROLES. Van ANTES del carrusel en el orden del DOM para que quien
+      navegue con teclado los encuentre antes de entrar en la región, no
+      después de haber recorrido las cinco tarjetas.
+
+      El plan de la fase pedía controles visibles y no solo arrastre, que es el
+      fallo clásico del patrón: sin botones, un carrusel arrastrable es
+      invisible para quien no usa ratón ni pantalla táctil.
+    -->
+    <div class="mt-10 flex items-center gap-3">
+      <button
+        type="button"
+        [disabled]="atStart()"
+        (click)="goTo(index() - 1)"
+        aria-label="Salsa anterior"
+        aria-controls="salsas-carrusel"
+        class="flex h-12 w-12 items-center justify-center rounded-none border-2 border-bone text-bone focus:outline-none focus:ring-4 focus:ring-bone/60 disabled:cursor-not-allowed disabled:border-ink-soft disabled:text-ink-soft"
+      >
+        <!--
+          El botón en el tope se deshabilita de verdad, con el atributo, y se
+          marca con `ink-soft`. Es el único sitio del proyecto donde un texto
+          baja de 4,5:1 a propósito: WCAG excluye explícitamente los
+          componentes de interfaz INACTIVOS del requisito de contraste (SC
+          1.4.3), y lo que hace falta aquí es justo lo contrario de destacar —
+          que se lea como no disponible.
+        -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m15 18-6-6 6-6"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        [disabled]="atEnd()"
+        (click)="goTo(index() + 1)"
+        aria-label="Salsa siguiente"
+        aria-controls="salsas-carrusel"
+        class="flex h-12 w-12 items-center justify-center rounded-none border-2 border-bone text-bone focus:outline-none focus:ring-4 focus:ring-bone/60 disabled:cursor-not-allowed disabled:border-ink-soft disabled:text-ink-soft"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m9 18 6-6-6-6"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <!--
+        `aria-live="polite"` anuncia el cambio de tarjeta a quien no la ve.
+        Sin esto, pulsar «siguiente» no produce ninguna señal audible: el foco
+        no se mueve y el contenido que cambia está fuera de la zona del botón.
+      -->
+      <p aria-live="polite" class="ml-2 font-display text-xl uppercase">
+        {{ rangeLabel() }}
+      </p>
+    </div>
+  </div>
+
+  <!--
+    LA VENTANA. Recorta, y es el `bounds` del Draggable.
+
+    `role="region"` con `aria-roledescription` la anuncia como carrusel en vez
+    de como una región genérica. `tabindex="0"` es obligatorio y no decorativo:
+    es una zona desplazable, y una zona desplazable que no se puede enfocar no
+    se puede recorrer con el teclado.
+
+    No lleva `overflow-x: auto`: el desplazamiento lo hace `Draggable` con un
+    `transform`. Mezclar los dos mecanismos daría dos scrolls compitiendo, que
+    es el defecto que este proyecto se negó a copiar de la referencia.
+  -->
+  <div
+    #viewport
+    id="salsas-carrusel"
+    role="region"
+    aria-roledescription="carrusel"
+    aria-label="Las cinco salsas de la gama"
+    tabindex="0"
+    (keydown)="onKeydown($event)"
+    class="mx-auto mt-8 max-w-5xl overflow-hidden focus:outline-none focus:ring-4 focus:ring-bone/60"
+  >
+    <!--
+      `w-max` para que el carril mida la suma de sus tarjetas y no el ancho de
+      la ventana; es lo que hace que haya algo que arrastrar.
+    -->
+    <ul #track class="flex w-max gap-5 sm:gap-8">
+      @for (product of products; track product.name; let i = $index) {
+        <li
+          data-anim="card"
+          tabindex="0"
+          role="group"
+          aria-roledescription="salsa"
+          [attr.aria-label]="i + 1 + ' de ' + products.length + ': ' + product.name"
+          (focus)="onCardFocus(i)"
+          class="w-[78vw] max-w-sm shrink-0 translate-y-4 border-2 border-ink bg-bone p-6 text-ink opacity-0 focus:outline-none focus:ring-4 focus:ring-brand sm:w-80 motion-reduce:translate-y-0 motion-reduce:opacity-100"
+        >
+          <!--
+            La botella. El color entra por `[fill]` como `var(--color-heat-N)`:
+            una sola ilustración sirve para las cinco salsas, que era la razón
+            de elegir SVG sobre fotografía.
+
+            `class="block h-48"` en el host hace falta porque un elemento a
+            medida es `inline` por defecto, y el SVG de dentro mide `h-full`:
+            sin caja con altura, no se vería nada.
+          -->
+          <app-bottle
+            class="mx-auto block h-48 sm:h-56"
+            [fill]="product.fill"
+            [labelText]="product.label"
+          />
+
+          <div class="mt-6 flex items-center gap-2">
+            <!--
+              Punto del color de la salsa. Va con `[style.background-color]` y
+              no con una clase: `bg-{{ token }}` nunca se generaría, porque
+              Tailwind escanea el fuente buscando nombres de clase literales y
+              una clase compuesta no aparece escrita en ninguna parte.
+
+              Es decoración —el dato lo da el texto de al lado— así que lleva
+              `aria-hidden`.
+            -->
+            <span
+              class="h-3 w-3 shrink-0 rounded-full border border-ink"
+              [style.background-color]="product.fill"
+              aria-hidden="true"
+            ></span>
+            <p class="font-display text-sm uppercase tracking-wide">
+              Grado {{ i + 1 }}
+            </p>
+          </div>
+
+          <h3 class="mt-1 font-display text-3xl uppercase leading-none sm:text-4xl">
+            {{ product.name }}
+          </h3>
+
+          <!--
+            `text-ink-soft` y no `text-ink/60`: una utilidad de opacidad sobre
+            texto mezcla el color con el fondo y hunde el ratio real por debajo
+            de AA, mientras el script —que mide colores sólidos— seguiría
+            diciendo que pasa. Este token es ese mismo gris en sólido, 5,94:1.
+          -->
+          <p class="mt-2 text-base text-ink-soft">{{ product.scoville }}</p>
+
+          <p class="mt-4 text-base leading-relaxed">
+            <span class="font-medium">{{ product.pepper }}</span>
+            <span class="italic text-ink-soft"> · {{ product.species }}</span>
+          </p>
+
+          <p class="mt-2 text-base leading-relaxed">{{ product.note }}</p>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <!--
+    Curva de salida hacia el proceso, que es `bone`.
+
+    Es el espejo vertical de la curva de entrada del CTA: el relleno es el
+    color de la sección CONTIGUA, porque la curva no dibuja el borde del negro
+    sino lo que el hueso invade sobre él. El `pb-32` del section existe por
+    esto; sin él la última tarjeta quedaría debajo de la curva.
+  -->
+  <svg
+    class="pointer-events-none absolute inset-x-0 bottom-0 h-12 w-full sm:h-20"
+    viewBox="0 0 1440 80"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M0 80 L1440 80 L1440 46 C1180 78, 980 6, 700 28 C430 49, 250 10, 0 40 Z"
+      fill="var(--color-bone)"
+    />
+  </svg>
+</section>

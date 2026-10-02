@@ -5,6 +5,7 @@ import { HeatScale } from './components/heat-scale/heat-scale';
 import { Hero } from './components/hero/hero';
 import { Origin } from './components/origin/origin';
 import { Process } from './components/process/process';
+import { Products } from './components/products/products';
 import { SiteFooter } from './components/site-footer/site-footer';
 
 /**
@@ -21,7 +22,7 @@ import { SiteFooter } from './components/site-footer/site-footer';
  */
 @Component({
   selector: 'app-root',
-  imports: [Hero, Origin, HeatScale, Process, Cta, SiteFooter],
+  imports: [Hero, Origin, HeatScale, Products, Process, Cta, SiteFooter],
   templateUrl: './app.html',
 })
 export class App {}
