@@ -881,6 +881,45 @@ el porqué de cada directiva va aquí:
 tocar esta política o fallará en silencio** — el navegador bloquea y lo dice solo en
 consola. Es el precio de tener CSP, y es un precio que vale la pena.
 
+### El CSS crítico de Angular es incompatible con esta CSP
+
+**La página salió en producción sin ningún estilo de Tailwind**, y el diagnóstico
+costó porque todas las comprobaciones de red daban bien: el CSS respondía 200, con
+`Content-Type: text/css`, 23 553 bytes, y el navegador lo tenía parseado con sus 198
+utilidades dentro de `@layer utilities`. Simplemente no las aplicaba.
+
+La causa estaba en una sola palabra del HTML:
+
+```html
+<!-- lo que genera Angular con inlineCritical (por defecto) -->
+<link rel="stylesheet" href="styles-….css" media="print" onload="this.media='all'">
+```
+
+Es la optimización de **CSS crítico**: Angular inyecta el CSS del primer pantallazo
+en un `<style>` y carga el resto con `media="print"` para que no bloquee el render,
+devolviéndolo a `all` desde un `onload`. **Ese `onload` es un manejador inline, y
+`script-src 'self'` lo bloquea.** El CSS se queda en «solo para imprimir» para
+siempre, y el `<link>` de respaldo del `<noscript>` tampoco entra, porque JavaScript
+sí está activo.
+
+Se arregla **desactivando la optimización, no relajando la política**:
+
+```jsonc
+// angular.json → configurations.production
+"optimization": { "styles": { "minify": true, "inlineCritical": false } }
+```
+
+El coste es que la hoja vuelve a bloquear el render. Son **4,80 kB** transferidos:
+irrelevante, y a cambio desaparece el destello de contenido sin estilo. La
+alternativa —añadir `'unsafe-inline'` a `script-src`— habría permitido *cualquier*
+manejador inline de toda la página para salvar uno.
+
+**La lección de método:** el síntoma era visual y todas las métricas de red decían
+que estaba bien. Lo que lo resolvió fue mirar `document.styleSheets` y leer el
+`media` de la hoja — tres pasos después de empezar a buscar en el sitio equivocado.
+Cuando un recurso carga pero no surte efecto, **el problema no está en si llegó sino
+en cómo se declaró**.
+
 **Lo que NO se hizo, y es decisión tomada:** auto-hospedar las tipografías. Las sigue
 sirviendo Google, así que el navegador de cada visitante le revela su IP. No
 compromete al proyecto; es privacidad de quien visita. Si algún día importa —por
