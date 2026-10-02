@@ -853,6 +853,40 @@ componentes, accesibilidad, anti-patrones. Lo que aporte se acepta como andamio,
 `~/.claude/plugins/cache/.../ui-ux-pro-max/<versión>/...`. La ruta lleva el número de
 versión dentro, así que localízala con `find` en vez de copiarla.
 
+## Despliegue y cabeceras
+
+El sitio es **estático**: `ng build` sin `outputMode`, salida en
+`dist/bravo-landing/browser`, que es justo lo que espera el preset de Angular en
+Vercel. No hay SSR, ni backend, ni variables de entorno.
+
+**Lo que se publica son cinco archivos** —`index.html`, el JS, el CSS, el favicon y
+la textura—: el `CLAUDE.md`, la auditoría, los scripts y el sistema de diseño se
+quedan en el repositorio. Verificado además que el build **no emite source maps** y
+que los comentarios largos del código **no sobreviven al minificado**, así que todo
+el razonamiento documentado aquí no viaja al navegador de nadie.
+
+`vercel.json` lleva las cabeceras de seguridad. JSON no admite comentarios, así que
+el porqué de cada directiva va aquí:
+
+| Directiva | Por qué ese valor |
+|---|---|
+| `script-src 'self'` | el build **no genera ningún script inline**; comprobado antes de escribir la política |
+| `style-src` con `'unsafe-inline'` | Angular inyecta los estilos de componente como `<style>` en el `head`. No es evitable sin nonces, y con un sitio estático no hay quien los genere |
+| `font-src … fonts.gstatic.com` | las tipografías vienen de Google Fonts; sin esto el titular cae al respaldo |
+| `img-src 'self' data:` | el grano del papel es un SVG en `data:` URI dentro del CSS |
+| `frame-ancestors 'none'` + `X-Frame-Options: DENY` | impide que la página se embeba en un iframe ajeno. Los dos, porque navegadores viejos ignoran el primero |
+| `form-action 'self'` | el formulario no envía a ninguna parte, pero si algún día lo hiciera, que no sea a un tercero |
+
+**Si se añade una fuente externa, una imagen remota o una llamada a una API, hay que
+tocar esta política o fallará en silencio** — el navegador bloquea y lo dice solo en
+consola. Es el precio de tener CSP, y es un precio que vale la pena.
+
+**Lo que NO se hizo, y es decisión tomada:** auto-hospedar las tipografías. Las sigue
+sirviendo Google, así que el navegador de cada visitante le revela su IP. No
+compromete al proyecto; es privacidad de quien visita. Si algún día importa —por
+ejemplo con tráfico europeo— la salida es descargar los `woff2` y servirlos desde
+`public/`, a cambio de ~100 kB en el repositorio y perder el CDN.
+
 ## Reglas transversales de verificación
 
 **Verificar que el servidor se recuperó no es lo mismo que verificar que `ng build`
