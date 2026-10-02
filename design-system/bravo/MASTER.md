@@ -192,3 +192,17 @@ fintech y Google Stitch metió tokens de Material Design 3 y un azul ajeno a la 
 | 2026-09-30 | Textura del titular con alfa `-5 · ruido + 3.9` | Rechazado | Se comía media letra: parecía corroída, no desgastada |
 | 2026-09-30 | Textura del titular con alfa `-7 · ruido + 5.6` | Rechazado | Pablo: «tiene muchos espacios blancos». Aún destruía demasiada superficie de letra |
 | 2026-09-30 | Tres variantes en paralelo (`-7`, `-10`, `-13`) | Elegida `-13 · ruido + 11.3` | La letra se lee sólida y el desgaste solo se aprecia de cerca, que es lo que hace la referencia |
+
+### Fase 7 — checklist `quick-reference.md` de `ui-ux-pro-max`
+
+Lo que el checklist pedía y aquí **no** se hizo. Lo aceptado no se registra: está
+en el código. Esto es solo lo rechazado, con su motivo.
+
+| Regla del checklist | Qué pedía | Qué se hizo | Por qué |
+|---|---|---|---|
+| `disabled-states` | Opacidad reducida (0,38–0,5) en controles deshabilitados | Token sólido `ink-soft` + `cursor-not-allowed` + atributo `disabled` | La regla 5 del proyecto prohíbe `opacity-*` sobre texto: mezcla el color con el fondo y hunde el ratio real mientras el script, que mide sólidos, sigue diciendo que pasa. Un token sólido da el mismo efecto y es medible |
+| `viewport-units` | Preferir `min-h-dvh` sobre `100vh` | Se mantiene `h-screen` | `dvh` cambia de valor cuando el navegador móvil oculta su barra, y cada cambio dispararía un `ScrollTrigger.refresh()` en mitad de un `pin`. Un alto estable vale más aquí que el ajuste al viewport dinámico |
+| `stagger-sequence` | 30–50 ms por elemento | 60–70 ms | La banda del proyecto es 45–125 ms, tomada de la referencia. 30 ms en un reveal editorial se lee como un parpadeo |
+| `duration-timing` | Micro-interacciones de 150–300 ms | Reveals de 500 ms | Son entradas de sección, no micro-interacciones. A 300 ms el contenido aparece antes de que el ojo llegue |
+| `excessive-motion` | Animar 1–2 elementos clave por vista como máximo | El hero anima 4 capas | Las tres velocidades distintas **son** el efecto de profundidad; reducirlo a dos capas elimina el motivo de la sección |
+| `skip-links` | Enlace de salto al contenido principal | No se añade | No hay navegación repetida que saltar: 15 elementos interactivos en toda la página y ningún menú antes del contenido. El problema real de recorrido está anotado en la auditoría (principio #2) y es otro |

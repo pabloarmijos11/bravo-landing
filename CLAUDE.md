@@ -726,11 +726,31 @@ color, y como temblor si hay texto.
 y no queda ningún valor que el JS pueda tener desactualizado. Cuesta un recálculo
 de layout al entrar y otro al salir — dos en todo el recorrido, no uno por frame.
 
-**Por qué el hero no lo sufre con los mismos ajustes:** su contenido se mueve con el
-scroll (`yPercent`), y el temblor queda enmascarado dentro de ese movimiento. En la
+**Por qué el hero parecía no sufrirlo:** su contenido se mueve con el scroll
+(`yPercent`), y el temblor continuo queda enmascarado dentro de ese movimiento. En la
 escala el texto está quieto durante el reposo de cada nivel, así que cualquier
 oscilación se ve desnuda. **Un pin con contenido quieto es un detector de temblor;
 uno con contenido en movimiento lo esconde.**
+
+> ⚠️ **Corregido en la fase 7: esa frase era cierta a medias y llevó a mantener el
+> hero con `transform` + `anticipatePin: 1` tres fases de más.**
+>
+> El enmascaramiento vale para el temblor **continuo** del recorrido, no para el
+> **salto del instante en que el pin se activa**. El hero arranca en `top top`, así
+> que ese instante es el primer movimiento de rueda — y ahí no hay movimiento previo
+> que esconda nada. En Firefox se veía como un brinco al empezar, y después todo
+> bien.
+>
+> **Las dos secciones pineadas usan ahora `pinType: 'fixed'` y ninguna lleva
+> `anticipatePin`.** No hay un «ajuste para contenido en movimiento» y otro para
+> contenido quieto: hay uno que posiciona desde JavaScript y otro que ancla el
+> navegador, y el segundo gana en los dos casos.
+>
+> El motivo por el que el hero llevaba `transform` —evitar el recálculo de layout al
+> soltar el pin, que daba un tirón al entrar en Origen— sigue siendo real. Lo que
+> estaba mal era el precio: se pagaba un salto al principio para ahorrar uno al
+> final, y el del principio lo ve todo el mundo. Verificado comparando las cuatro
+> combinaciones en Firefox, mirando también la salida.
 
 El camino hasta aquí, porque los dos desvíos son instructivos:
 
@@ -984,6 +1004,32 @@ tiempo o forzar `ScrollTrigger.refresh()`.
       cambiar el viewport) y la costura con la escala. Más `reduce` emulado y
       móvil real, que siguen pendientes desde la fase 4.
 
-- [ ] **Fase 7** — pulido y auditoría
+- [x] **Fase 7** — pulido y auditoría.
+
+      Medido: **121,55 kB** de 130; contraste en verde; **0 scroll horizontal y
+      0 desbordes** reales a 375 / 768 / 1024 / 1440 (banco de pruebas en iframe
+      de ancho controlado, porque `resize_window` no cambiaba el viewport); y
+      **7 `ScrollTrigger` y 2 `pin-spacer` constantes** antes de recorrer la
+      página, después, al volver y tras un `refresh()` — sin fugas.
+
+      Del checklist `quick-reference.md` salieron tres defectos reales, los tres
+      corregidos: los botones tenían **`cursor: default`** (el preflight de
+      Tailwind v4 lo pone así, al revés que v3), los cinco enlaces del pie
+      median **23 px de alto** —por debajo del mínimo táctil de 44— y ahora
+      miden 52 con 8 px de separación. Lo rechazado del checklist está en la
+      tabla de overrides de `design-system/bravo/MASTER.md`, con su motivo.
+
+      Auditoría Rams en `DESIGN-IS-2026-10-02/`: **24/30, veredicto REFINE**,
+      sin ningún principio por debajo de 2. Los cuatro treses caen en estético,
+      comprensible, honesto y minucioso. El traspaso a `/make-plan` está escrito
+      en `04-handoff-prompt.md`.
+
+      **Lo que la auditoría encontró y conviene no perder:** el carrusel y la
+      escala cuentan el mismo contenido —misma variedad, mismo rango SHU, misma
+      especie en los cinco— y no hay ninguna vía rápida al formulario en un
+      documento de 10 008 px. Tres de las seis notas de 2 chocan con decisiones
+      deliberadas del proyecto (el pin largo, los 18,87 kB de Signal Forms, el
+      scroll cinematográfico como marcador de época); están anotadas como tales
+      y la decisión de actuar sobre ellas es de Pablo.
 
 Plan por fases completo en `~/.claude/plans/bravo-landing-fases.md`.

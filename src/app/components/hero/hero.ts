@@ -71,29 +71,34 @@ export class Hero {
             end: '+=70%',
             pin: true,
 
-            // Pinea con `transform`, no con `position: fixed`.
+            // `fixed`, y SIN `anticipatePin`. Las dos cosas van juntas y las
+            // dos cambiaron en la fase 7, después de llevar cuatro fases con
+            // `transform` + `anticipatePin: 1`.
             //
-            // Por defecto ScrollTrigger cambia el elemento a `position: fixed`
-            // mientras dura el pin y lo devuelve al flujo al soltarlo. Cambiar
-            // el modelo de posicionamiento de un elemento de pantalla completa
-            // obliga al navegador a recalcular el layout, y eso produce un
-            // frame largo justo en la transición — el tirón que se notaba al
-            // entrar en la sección siguiente.
+            // QUÉ PASABA. En Firefox, el hero daba un salto en el PRIMER
+            // movimiento de rueda y después iba bien. El pin arranca en
+            // `top top`, así que se activa justo ahí: en el primer scroll.
+            // Los dos ajustes anteriores posicionaban la sección desde
+            // JavaScript —`transform` con un translateY que GSAP recalcula, y
+            // `anticipatePin` adelantando el pin según la velocidad— y en el
+            // instante de activarse eso se ve como un brinco.
             //
-            // Con `transform` no hay cambio de posicionamiento: es un
-            // translateY que se aplica y se deja de aplicar, resuelto en el
-            // compositor.
+            // Es el MISMO problema que la escala de picante tuvo en Chrome en
+            // la fase 4, y acaba en la misma solución. Lo que allí se dijo —que
+            // el hero se libraba porque su contenido se mueve y enmascara el
+            // artefacto— era cierto solo para el temblor CONTINUO del recorrido.
+            // El salto del instante de activación no lo enmascara nada.
             //
-            // CONTRAINDICACIÓN: un elemento `position: fixed` DENTRO de algo
-            // transformado deja de ser fijo respecto al viewport. Aquí no hay
-            // ninguno (el grano del fondo es `body::before`, fuera del hero),
-            // pero hay que recordarlo si alguna sección futura mete uno.
-            pinType: 'transform',
-
-            // Adelanta la preparación del pin en función de la velocidad del
-            // scroll. Pensado justo para secciones grandes, donde el cambio se
-            // nota si se hace exactamente en el píxel del umbral.
-            anticipatePin: 1,
+            // POR QUÉ SE HABÍA ELEGIDO `transform`: para evitar el recálculo de
+            // layout al soltar el pin, que daba un tirón al entrar en Origen.
+            // Ese motivo sigue siendo real, pero el precio estaba mal puesto —
+            // se pagaba un salto al principio para ahorrar uno al final, y el
+            // del principio lo ve todo el mundo. Comprobado en Firefox contra
+            // las otras tres combinaciones, mirando también la salida.
+            //
+            // CONTRAINDICACIÓN de `fixed`: no funciona dentro de un ancestro
+            // transformado. Aquí el hero no tiene ninguno.
+            pinType: 'fixed',
 
             // `true`, NO un número. Y esto costó dos rondas de entenderlo.
             //
