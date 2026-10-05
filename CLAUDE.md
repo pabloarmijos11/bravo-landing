@@ -972,12 +972,129 @@ De ahí la táctica que sí funcionó: **verificar la lógica por la ruta síncr
 acto y permite comprobar toda la aritmética —topes, redondeo, acotado— sin
 depender del ticker. Y de paso es exactamente la ruta que recorre `reduce`.
 
+### Un elemento posicionado en absoluto no reserva su sitio
+
+Obvio dicho así, y aun así se escapó hasta que se vio en un iPhone real: el
+medidor de la escala va en `absolute`, así que **el contenido no sabe que está
+ahí**. En pantallas anchas sobra espacio y no se nota; a 390 px, la segunda
+columna del `dl` («Dónde crece / Sierra alta») se metía justo debajo de la vara.
+
+La regla que queda: **cuando algo flota sobre el contenido, el contenido
+necesita un padding que reserve esa banda, y ese padding se calcula desde las
+medidas del elemento flotante**, no a ojo. Aquí: `right-5` (20 px) + marcas
+`w-4` (16) + `gap-3` (12) + barra `w-2.5` (10) = 58 px, y `pr-20` (80 px) los
+cubre con aire. Está escrito en `heat-scale.html` junto a la clase, para que
+quien toque el medidor vea que hay un número que va con él.
+
+Verificado con carga limpia a 320 / 360 / 390 / 430 px: 0 choques, 0 texto
+recortado y 0 scroll horizontal en los cinco niveles.
+
+### El banco de pruebas en iframe miente al redimensionarlo en caliente
+
+El iframe de ancho controlado sigue siendo la forma de probar anchos de móvil
+—`resize_window` nunca ha cambiado el viewport en este proyecto—, pero hay que
+**recargar el `src` después de cambiar el tamaño**, no solo cambiarlo.
+
+Medido: redimensionando en caliente, los `pin-spacer` conservaban el ancho
+anterior y daban un falso positivo de scroll horizontal a 320 y 360 px. Con
+carga limpia al ancho final, cero desborde. Y ojo con `innerWidth`, que incluye
+la barra de scroll del iframe: lo que hay que comparar es
+`documentElement.scrollWidth` contra `clientWidth`.
+
 **Para comprobar un `ScrollTrigger`, usar scroll real, no `window.scrollTo`.** Un
 salto programático justo después de montar el componente da un falso negativo: la
 animación parece no dispararse porque los triggers recién creados todavía no han
 asentado sus posiciones. Pasó en la fase 2 y costó un rato de diagnóstico creyendo
 que el patrón estaba roto. Si hace falta scroll programático, hay que dejar pasar
 tiempo o forzar `ScrollTrigger.refresh()`.
+
+## Un fallo de iOS que no se ha podido reproducir (2026-10-05)
+
+Queda abierto. Está aquí para que, si reaparece, se arranque desde lo ya
+descartado y no desde cero.
+
+**El síntoma, tal y como se vio** en un iPhone con iOS 18.7.7 / Safari, en la
+URL de producción, en lo que era la **primera visita de ese dispositivo**: la
+escala de picante se quedaba clavada, el fondo no salía del verde del nivel 1 y
+**los cinco bloques de texto se veían superpuestos a la vez**. El hero y el
+carrusel funcionaban con normalidad en la misma sesión. En escritorio, perfecto.
+
+**Lo descartado, por medición y no por cansancio:**
+
+| Hipótesis | Qué la descarta |
+|---|---|
+| El ancho de pantalla | Reproducido a 390×844: los cinco niveles se turnan y el fondo transiciona, en ambos sentidos |
+| `prefers-reduced-motion` | `reduce:no` en el dispositivo; y con `reduce` el pin del hero ni se crearía, y sí funcionaba |
+| El layout de `reduce` (nunca verificado hasta aquí) | Desenvueltas sus 22 reglas: apila bien los cinco niveles en vertical |
+| CSS que Safari no entienda | El bundle exige Safari ≥ 16.4 y el dispositivo va por 18.7 — ver abajo |
+| GSAP caído | Hero pineado y carrusel arrastrable en el mismo iPhone |
+| `pinType: 'fixed'` roto en iOS | `sec pos:fixed` + `trig act:SI` en las tres capturas del dispositivo |
+| Cascada de `refresh()` por la barra de Safari | 7 `resize` → 2 `refresh`. La altura osciló 82 px (`vh663/745`) sin provocar recálculos en cadena |
+| Restauración de scroll de Safari al recargar | Recargando a media página devuelve a `scrollY:0`; no restaura |
+| Un despliegue antiguo | El que se vio es el último de producción, commit `fe1f65f` |
+
+**Dónde NO se reproduce:** Chrome de escritorio, iframe a 390 px, iOS Safari
+contra el dev server, y iOS Safari contra el **build de producción con la CSP
+real, caché vacía y pestaña privada**, bajando deprisa. Cuatro entornos.
+
+**Por qué no se añadieron «defensas por si acaso».** Lo evidente sería poner
+`ScrollTrigger.config({ ignoreMobileResize: true })` y dejar de forzar
+`pinType: 'fixed'` en táctil. No se hizo porque la medición dice que ninguna de
+las dos cosas está fallando, y el proyecto ya tomó esta decisión una vez: ver el
+bloque de `normalizeScroll` en `gsap-setup.ts`, desactivado con el argumento de
+que mantener una API para compensar un problema que quizá ya no existe es
+acumular complejidad sin comprobar que hace falta.
+
+**La hipótesis que sigue viva** es una condición de carrera de la primera carga:
+el `ScrollTrigger.refresh()` colgado de `document.fonts.ready` cayendo justo
+mientras la escala ya está pineada. Un refresh con un pin activo lo revierte,
+remide y lo reaplica. No se ha logrado provocar.
+
+### El instrumento, que es lo más reutilizable de todo esto
+
+Cuando el fallo solo ocurre en un dispositivo al que no se llega con
+herramientas, la salida es **llevar el instrumento al dispositivo**:
+
+1. **Servir el build de producción en la red local**, no el dev server. Se
+   diferencian en tres cosas que importan: minificado, CSS que bloquea el
+   render y la CSP. Un servidor estático de Node sin dependencias, con las
+   cabeceras copiadas de `vercel.json` y `Cache-Control: no-store` para que
+   cada carga sea una primera visita.
+2. **Un panel fijo en pantalla** que se lea en una captura: viewport, `reduce`,
+   nº de triggers y spacers, `position` y `backgroundColor` de la sección,
+   `isActive`/`progress`/`start`/`end` del trigger, y las opacidades calculadas
+   e inline de los cinco niveles.
+3. **Contadores que NO se reinicien.** Es la pieza clave: un fallo que dura
+   medio segundo y se corrige solo no sale en ninguna captura del estado
+   actual. Los dos que se usaron: cuántas veces el scroll estuvo dentro de
+   `[start, end]` con el trigger inactivo, y cuántos niveles llegaron a verse a
+   la vez (dos o más es imposible salvo fallo, porque los fades de entrada y
+   salida no se solapan por construcción).
+
+El panel escribe con `textContent` y no con un signal: un signal a 5 Hz
+dispararía detección de cambios durante el scroll, que es justo el momento que
+se está midiendo. **El instrumento no debe alterar lo que observa.**
+
+Para que un iPhone alcance el servidor hacen falta dos cosas en Windows, y la
+segunda es la que no es obvia: una regla que permita el puerto, **y comprobar
+que no haya una regla de bloqueo para Node**, porque en el firewall de Windows
+las reglas de bloqueo ganan siempre a las de permitir. Había dos, creadas solas
+al cerrar el diálogo de permiso en su día, y anulaban la regla nueva.
+
+### Tailwind v4 exige Safari ≥ 16.4
+
+No fue la causa de nada aquí, pero conviene tenerlo escrito: el CSS que genera
+no es transpilable a navegadores viejos. Contado en el bundle: **28 `@property`,
+17 `color-mix()`, 2 media queries de rango (`@media(width>=40rem)`) y
+`opacity: 0%`** — todo ello Safari 16.4+ salvo `color-mix()`, que es 16.2.
+
+Y el detalle que más engaña: `.opacity-0` compila a `opacity: 0%`, **con
+porcentaje**. En un Safari anterior la declaración es inválida y se descarta
+entera, así que el elemento se queda a opacidad 1. En casi todo el proyecto eso
+sería inocuo —`opacity-0` es el estado inicial de los reveals, y el contenido
+simplemente aparecería sin animarse—, pero **en la escala sería catastrófico**:
+ahí `opacity-0` no decora, es lo que apila cinco bloques en el mismo sitio y
+deja ver uno.
 
 ## Estado del proyecto
 

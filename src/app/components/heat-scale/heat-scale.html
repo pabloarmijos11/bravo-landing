@@ -50,12 +50,27 @@
     regla prohíbe la opacidad PARCIAL permanente, que mezcla el texto con el
     fondo y hunde el ratio real por debajo de lo que mide el script. Esto es
     oculto o visible del todo; el estado de lectura siempre es opacidad 1.
+
+    EL PADDING DERECHO ES ASIMÉTRICO Y NO ES UN DESCUIDO.
+
+    El medidor de la derecha está posicionado en absoluto, así que no ocupa
+    sitio en el flujo y el contenido no se entera de que está ahí. En pantallas
+    anchas sobra espacio y no se nota; a 390 px, «Dónde crece / Sierra alta»
+    —la segunda columna del `dl`— se metía justo debajo de la vara.
+
+    Lo que ocupa el medidor: `right-5` (20 px) + marcas `w-4` (16) + `gap-3`
+    (12) + barra `w-2.5` (10) = hasta 58 px del borde. `pr-20` (80 px) deja esa
+    banda libre con aire. Si se toca el ancho o la posición del medidor, este
+    padding se recalcula con él.
+
+    Con `motion-reduce` el medidor está oculto (`motion-reduce:hidden`), así que
+    ahí la reserva sobra y el padding vuelve a ser simétrico.
   -->
   @for (level of levels; track level.pepper; let i = $index) {
     <article
       data-anim="level"
       [class]="level.classes"
-      class="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 lg:px-20 motion-reduce:static motion-reduce:h-auto motion-reduce:py-16"
+      class="absolute inset-0 flex flex-col justify-center pl-6 pr-20 sm:pl-12 sm:pr-28 lg:pl-20 lg:pr-32 motion-reduce:static motion-reduce:h-auto motion-reduce:py-16 motion-reduce:pr-6 motion-reduce:sm:pr-12 motion-reduce:lg:pr-20"
     >
       <!-- Posición en la escala, con el subrayado a mano de la referencia. -->
       <p class="font-hand text-2xl sm:text-3xl">{{ i + 1 }} de {{ levels.length }}</p>
