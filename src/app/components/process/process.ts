@@ -1,11 +1,7 @@
 import { Component, ElementRef, viewChild } from '@angular/core';
 import { gsap } from 'gsap';
 
-import {
-  MOTION_OK,
-  MOTION_REDUCED,
-  createMotionScope,
-} from '../../animations/motion-scope';
+import { MOTION_OK, MOTION_REDUCED, createMotionScope } from '../../animations/motion-scope';
 
 /** Un paso del proceso. */
 interface Step {

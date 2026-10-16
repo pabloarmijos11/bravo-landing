@@ -1,11 +1,7 @@
 import { Component, ElementRef, viewChild } from '@angular/core';
 import { gsap } from 'gsap';
 
-import {
-  MOTION_OK,
-  MOTION_REDUCED,
-  createMotionScope,
-} from '../../animations/motion-scope';
+import { MOTION_OK, MOTION_REDUCED, createMotionScope } from '../../animations/motion-scope';
 
 /**
  * Origen: de dónde viene el ají, con los datos que el hero no puede dar.

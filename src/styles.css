@@ -43,9 +43,9 @@
 
 @theme {
   /* --- Base: tres colores, como la referencia ---------------------------- */
-  --color-bone: #edE9df;   /* fondo de pagina */
-  --color-ink: #1a1919;    /* texto y titulares sobre bone */
-  --color-brand: #c4231f;  /* rojo de marca */
+  --color-bone: #ede9df; /* fondo de pagina */
+  --color-ink: #1a1919; /* texto y titulares sobre bone */
+  --color-brand: #c4231f; /* rojo de marca */
 
   /* Texto atenuado SOLIDO, para placeholders y textos secundarios.
      Existe por la regla de no usar nunca opacidad sobre texto: `text-ink/60`
@@ -60,15 +60,15 @@
      scripts/contraste.py, no elegido a ojo. Usar el texto contrario al que
      dice el token rompe WCAG (hasta 1.06:1 en heat-5).
   ------------------------------------------------------------------------ */
-  --color-heat-1: #4e9b47;      /* aji dulce     */
+  --color-heat-1: #4e9b47; /* aji dulce     */
   --color-heat-1-ink: #1a1919;
-  --color-heat-2: #e8b31f;      /* aji criollo   */
+  --color-heat-2: #e8b31f; /* aji criollo   */
   --color-heat-2-ink: #1a1919;
-  --color-heat-3: #e2701a;      /* aji raton     */
+  --color-heat-3: #e2701a; /* aji raton     */
   --color-heat-3-ink: #1a1919;
-  --color-heat-4: #c4231f;      /* rocoto        */
+  --color-heat-4: #c4231f; /* rocoto        */
   --color-heat-4-ink: #ede9df;
-  --color-heat-5: #1a1010;      /* habanero      */
+  --color-heat-5: #1a1010; /* habanero      */
   --color-heat-5-ink: #ede9df;
 
   /* --- Tipografia: tres niveles con roles opuestos ------------------------
@@ -78,7 +78,7 @@
   /* 'Anton Fallback' es Arial Narrow con las metricas ajustadas a las de
      Anton; ver el @font-face de arriba. Va ANTES del respaldo generico. */
   --font-display: 'Anton', 'Anton Fallback', 'Arial Narrow', sans-serif;
-  --font-hand: 'Caveat', 'Comic Sans MS', cursive;          /* eyebrows    */
+  --font-hand: 'Caveat', 'Comic Sans MS', cursive; /* eyebrows    */
   --font-body: 'Outfit', ui-sans-serif, system-ui, sans-serif; /* cuerpo   */
 }
 

@@ -2,11 +2,7 @@ import { Component, ElementRef, signal, viewChild } from '@angular/core';
 import { FormField, email, form, required, submit } from '@angular/forms/signals';
 import { gsap } from 'gsap';
 
-import {
-  MOTION_OK,
-  MOTION_REDUCED,
-  createMotionScope,
-} from '../../animations/motion-scope';
+import { MOTION_OK, MOTION_REDUCED, createMotionScope } from '../../animations/motion-scope';
 
 /**
  * CTA: suscripción al aviso de nuevas tandas.
