@@ -138,4 +138,8 @@ de CSS crítico de Angular carga la hoja con `onload` inline, y la CSP lo bloque
 
 ## Licencia
 
-Pendiente de decidir. Marca, textos y producto son ficticios.
+[MIT](LICENSE).
+
+Marca, textos y producto son ficticios. Las tipografías son de Google Fonts
+(Anton, Caveat y Outfit, licencia SIL Open Font) y GSAP se usa bajo su licencia
+«Standard "no charge"».
