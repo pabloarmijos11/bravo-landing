@@ -40,8 +40,8 @@
       data-anim="reveal"
       class="mt-6 max-w-xl translate-y-4 text-lg leading-relaxed opacity-0 sm:text-xl motion-reduce:translate-y-0 motion-reduce:opacity-100"
     >
-      Una por cada grado de la escala. Arrástralas con el ratón o el dedo, o
-      muévete con las flechas del teclado.
+      Una por cada grado de la escala. Arrástralas con el ratón o el dedo, o muévete con las flechas
+      del teclado.
     </p>
 
     <!--
@@ -145,7 +145,7 @@
           role="group"
           aria-roledescription="salsa"
           [attr.aria-label]="i + 1 + ' de ' + products.length + ': ' + product.name"
-          (focus)="onCardFocus(i)"
+          (focus)="onCardFocus(i, $event)"
           class="w-[78vw] max-w-sm shrink-0 translate-y-4 border-2 border-ink bg-bone p-6 text-ink opacity-0 focus:outline-none focus:ring-4 focus:ring-brand sm:w-80 motion-reduce:translate-y-0 motion-reduce:opacity-100"
         >
           <!--
@@ -178,9 +178,7 @@
               [style.background-color]="product.fill"
               aria-hidden="true"
             ></span>
-            <p class="font-display text-sm uppercase tracking-wide">
-              Grado {{ i + 1 }}
-            </p>
+            <p class="font-display text-sm uppercase tracking-wide">Grado {{ i + 1 }}</p>
           </div>
 
           <h3 class="mt-1 font-display text-3xl uppercase leading-none sm:text-4xl">

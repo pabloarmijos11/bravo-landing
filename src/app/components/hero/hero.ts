@@ -1,11 +1,7 @@
 import { Component, ElementRef, viewChild } from '@angular/core';
 import { gsap } from 'gsap';
 
-import {
-  MOTION_OK,
-  MOTION_REDUCED,
-  createMotionScope,
-} from '../../animations/motion-scope';
+import { MOTION_OK, MOTION_REDUCED, createMotionScope } from '../../animations/motion-scope';
 import { Bottle } from '../bottle/bottle';
 
 /**
@@ -41,7 +37,11 @@ export class Hero {
         // Eso es la creación de las capas de composición. Mientras no hay un
         // transform de verdad, el navegador no tiene por qué rasterizar el
         // titular en su propia capa; y rasterizarlo cuesta, porque mide
-        // 1677 × 1106 px y lleva una `mask-image` encima. Al llegar el primer
+        // 1677 × 737 px —4,7 MB de textura— y lleva una `mask-image` encima.
+        // Firefox tiene un presupuesto para `will-change`
+        // (`layout.css.will-change.max-mb`) que ronda los 3 MB, y al superarlo
+        // IGNORA la propiedad; Chrome es más generoso, y de ahí que el síntoma
+        // fuera de un solo navegador. Al llegar el primer
         // frame hace ese trabajo entero de golpe. Después queda cacheado, y de
         // ahí que solo se note una vez. `will-change: transform` lo pide, pero
         // es una sugerencia que los navegadores ignoran cuando el área es muy

@@ -39,13 +39,27 @@ npm run build
 
 La salida va a `dist/bravo-landing/`.
 
-## Verificar la paleta
-
-El proyecto no confía en el ojo para el contraste. Los pares de color se calculan:
+Para dar formato al código:
 
 ```bash
-py -3 scripts/contraste.py
+npm run format         # escribe
+npm run format:check   # solo comprueba
 ```
+
+## Scripts de Python
+
+El proyecto no confía en el ojo para el contraste: los pares de color se calculan.
+Las dos imágenes generadas tampoco se dibujan a mano, para que la paleta siga
+teniendo un solo origen.
+
+```bash
+py -3 scripts/contraste.py         # verificación WCAG de la paleta
+py -3 scripts/generar-textura.py   # public/textura-titular.png, la máscara del titular
+py -3 scripts/generar-og.py        # public/og.jpg, la previsualización al compartir
+```
+
+Los dos generadores llevan semilla fija: regenerarlos no cambia el resultado, así que
+no hay que ejecutarlos «por si acaso». Solo si cambia la paleta.
 
 En Windows hay que invocar Python con `py -3`: `python` y `python3` los intercepta
 el alias de ejecución de la Microsoft Store.
@@ -59,13 +73,13 @@ bravo-landing/
 ├─ DESIGN-IS-2026-10-02/      auditoría contra los principios de Dieter Rams
 ├─ design-system/bravo/
 │  └─ MASTER.md               sistema de diseño: color, tipografía, motion
-├─ scripts/
-│  └─ contraste.py            verificación WCAG de la paleta
+├─ public/                    favicon, la textura del titular y og.jpg
+├─ scripts/                   contraste.py y los dos generadores de imagen
 └─ src/
-   ├─ index.html              tipografías de Google Fonts
+   ├─ index.html              tipografías, metas sociales y canonical
    ├─ styles.css              tokens de diseño (@theme) y utilidades propias
    └─ app/
-      ├─ app.html             composición de las secciones
+      ├─ app.html             composición de las secciones dentro de <main>
       ├─ components/          una carpeta por sección, más bottle/
       └─ animations/          integración de GSAP y reduced-motion
 ```
@@ -94,7 +108,11 @@ exige transparencia. Además así el color de cada salsa es una variable CSS.
 - `prefers-reduced-motion` respetado desde el primer componente animado: con la
   preferencia activada el contenido se muestra en su estado final, nunca oculto ni
   a medio camino.
-- El carrusel de productos es navegable por teclado, no solo arrastrable.
+- El carrusel de productos es navegable por teclado, no solo arrastrable. Al tabular
+  hasta una tarjeta fuera de pantalla, el carrusel se desplaza hasta ella — con un
+  `transform` no hay scroll nativo que el navegador pueda ajustar por su cuenta.
+- Landmarks completos: las secciones van dentro de `<main>`, el pie aporta su
+  `contentinfo` y cada sección enlazable desde el pie tiene nombre accesible.
 
 ## Inspiración
 
@@ -106,8 +124,9 @@ código, sus imágenes ni sus tipografías.
 ## Despliegue
 
 El sitio es estático y se despliega solo en cada push a `master`. Se publican
-únicamente los cinco archivos del build: el `CLAUDE.md`, la auditoría y el sistema
-de diseño se quedan en el repositorio.
+únicamente los seis archivos del build —`index.html`, el JS, el CSS, el favicon, la
+textura y `og.jpg`—: el `CLAUDE.md`, la auditoría y el sistema de diseño se quedan en
+el repositorio.
 
 `vercel.json` lleva las cabeceras de seguridad (CSP, `X-Frame-Options`, `nosniff`,
 `Referrer-Policy`, `Permissions-Policy`). **Si se añade una fuente externa, una

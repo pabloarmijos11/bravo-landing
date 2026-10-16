@@ -2,11 +2,7 @@ import { Component, ElementRef, computed, signal, viewChild } from '@angular/cor
 import { gsap } from 'gsap';
 import { Draggable } from 'gsap/Draggable';
 
-import {
-  MOTION_OK,
-  MOTION_REDUCED,
-  createMotionScope,
-} from '../../animations/motion-scope';
+import { MOTION_OK, MOTION_REDUCED, createMotionScope } from '../../animations/motion-scope';
 import { Bottle } from '../bottle/bottle';
 
 /** Una salsa de la gama. Una por grado de la escala. */
@@ -328,9 +324,7 @@ export class Products {
     // Pasos que caben en el recorrido, y tarjetas que se ven a la vez. Ver el
     // comentario de `maxIndex`: no son `products.length - 1` y `1`.
     this.maxIndex.set(this.step ? Math.ceil(-this.minX / this.step) : 0);
-    this.perView.set(
-      this.step ? Math.max(1, Math.round(viewport.clientWidth / this.step)) : 1,
-    );
+    this.perView.set(this.step ? Math.max(1, Math.round(viewport.clientWidth / this.step)) : 1);
   }
 
   /** Redondea un desplazamiento al múltiplo del paso, dentro de los límites. */
@@ -401,14 +395,32 @@ export class Products {
   }
 
   /**
-   * Trae a la vista la tarjeta que acaba de recibir el foco.
+   * Trae a la vista la tarjeta que acaba de recibir el foco **del teclado**.
    *
    * Es la pieza que arregla el agujero descrito en la cabecera de la clase: con
    * el carril movido por `transform` no hay scroll nativo que el navegador
    * pueda ajustar, así que tabular hasta una tarjeta fuera de pantalla dejaría
    * el foco invisible.
+   *
+   * EL FILTRO DE `:focus-visible` NO ES ADORNO.
+   *
+   * Sin él, cualquier foco mueve el carril — incluido el que da un toque con el
+   * dedo. En escritorio no se notaba porque `Draggable` llama a
+   * `preventDefault()` en el press y así el clic nunca llega a enfocar la
+   * tarjeta (su `_isClickable()` solo exceptúa `<a>`, `<input>`, `<button>` y
+   * `data-clickable`, y esto es un `<li tabindex="0">`). Pero en táctil
+   * `allowNativeTouchScrolling` impide ese `preventDefault` a propósito —es lo
+   * que deja que el dedo haga scroll vertical— así que ahí el toque SÍ puede
+   * enfocar, y el carrusel daría un salto justo cuando el usuario solo quería
+   * mirar.
+   *
+   * `:focus-visible` es exactamente esa distinción, y la resuelve el navegador:
+   * se aplica al tabular y no al pulsar con un puntero. El estilo del anillo ya
+   * usaba el mismo criterio; esto lo lleva al comportamiento.
    */
-  protected onCardFocus(i: number): void {
+  protected onCardFocus(i: number, event: FocusEvent): void {
+    if (!(event.target as HTMLElement).matches(':focus-visible')) return;
+
     this.goTo(i);
   }
 }

@@ -1,33 +1,47 @@
-<!-- Sección 1 — hero. -->
-<app-hero />
-
 <!--
-  Sección 2 — origen.
+  `<main>` envuelve las seis secciones, y el pie se queda FUERA a propósito.
 
-  Va aquí y no más abajo a propósito: el hero renunció al copy descriptivo
-  porque su titular ocupa la pantalla entera, así que lo primero que debe
-  llegar después es el contexto que al hero le falta.
+  Es el landmark principal del documento: un lector de pantalla ofrece saltar
+  directamente a él, y sin ninguno la única forma de recorrer la página es ir
+  encabezado por encabezado. `<footer>` ya aporta el suyo (`contentinfo`), que
+  por definición no es contenido principal y por eso no va dentro.
+
+  Faltaba desde la fase 1 y no se notó porque ninguna comprobación lo mira: las
+  secciones estaban apiladas directamente bajo `app-root`, que no es nada a
+  efectos semánticos.
 -->
-<app-origin />
+<main>
+  <!-- Sección 1 — hero. -->
+  <app-hero />
 
-<!-- Sección 3 — la escala de picante. -->
-<app-heat-scale />
+  <!--
+    Sección 2 — origen.
 
-<!--
-  Sección 4 — el carrusel de productos.
+    Va aquí y no más abajo a propósito: el hero renunció al copy descriptivo
+    porque su titular ocupa la pantalla entera, así que lo primero que debe
+    llegar después es el contexto que al hero le falta.
+  -->
+  <app-origin />
 
-  Va aquí, entre la escala y el proceso: después de saber a qué sabe cada
-  nivel y antes de contar cómo se hace.
+  <!-- Sección 3 — la escala de picante. -->
+  <app-heat-scale />
 
-  Arranca con el mismo `heat-5` en el que termina la escala, así que la costura
-  entre las dos secciones no se ve.
--->
-<app-products />
+  <!--
+    Sección 4 — el carrusel de productos.
 
-<!-- Sección 5 — cómo se hace. -->
-<app-process />
+    Va aquí, entre la escala y el proceso: después de saber a qué sabe cada
+    nivel y antes de contar cómo se hace.
 
-<!-- Sección 6 — suscripción. -->
-<app-cta />
+    Arranca con el mismo `heat-5` en el que termina la escala, así que la costura
+    entre las dos secciones no se ve.
+  -->
+  <app-products />
+
+  <!-- Sección 5 — cómo se hace. -->
+  <app-process />
+
+  <!-- Sección 6 — suscripción. -->
+  <app-cta />
+</main>
 
 <app-site-footer />

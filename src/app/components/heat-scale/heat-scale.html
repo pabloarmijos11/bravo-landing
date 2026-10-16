@@ -26,9 +26,25 @@
   y está revertido. El arreglo es `pinType: 'fixed'` sin `anticipatePin`, en
   heat-scale.ts, donde está el razonamiento entero.
 -->
+<!--
+  `aria-labelledby` apuntando al eyebrow, y es la única sección del proyecto que
+  lo necesita.
+
+  Todas las demás tienen un `<h2>` que las titula. Aquí los cinco `<h2>` son los
+  NOMBRES DE LOS AJÍES —uno por nivel— así que la sección en sí se quedaba sin
+  nombre: alguien que navegue por encabezados oye «Ají dulce, Ají criollo…» sin
+  que nada diga de qué va el conjunto, y el enlace «Escala» del pie aterrizaba
+  en una región anónima. Con el nombre puesto, la `<section>` pasa a ser una
+  región de verdad y se anuncia como «Cinco grados de calor».
+
+  Se resuelve señalando al eyebrow en vez de añadiendo un encabezado nuevo: el
+  texto ya está ahí y es el correcto, y un `<h2>` más competiría con los cinco
+  de los niveles en una pantalla que no tiene sitio para él.
+-->
 <section
   #root
   id="escala"
+  aria-labelledby="escala-titulo"
   class="relative h-screen overflow-hidden bg-heat-1 text-heat-1-ink motion-reduce:h-auto motion-reduce:overflow-visible"
 >
   <!--
@@ -38,6 +54,7 @@
     color válido; por eso puede permitirse estar siempre.
   -->
   <p
+    id="escala-titulo"
     class="absolute left-6 top-8 z-20 font-hand text-2xl sm:left-12 sm:text-3xl motion-reduce:static motion-reduce:mb-4 motion-reduce:px-6"
   >
     Cinco grados de calor
@@ -98,9 +115,7 @@
         costó caer a 1,3 FPS. `translateZ(0)` promueve el enmascarado a su
         propia capa.
       -->
-      <h2
-        class="text-worn max-w-[14ch] text-[11vw] leading-none [transform:translateZ(0)]"
-      >
+      <h2 class="text-worn max-w-[14ch] text-[11vw] leading-none [transform:translateZ(0)]">
         {{ level.pepper }}
       </h2>
 

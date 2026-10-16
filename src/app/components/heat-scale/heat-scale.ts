@@ -1,11 +1,7 @@
 import { Component, ElementRef, inject, viewChild } from '@angular/core';
 import { gsap } from 'gsap';
 
-import {
-  MOTION_OK,
-  MOTION_REDUCED,
-  createMotionScope,
-} from '../../animations/motion-scope';
+import { MOTION_OK, MOTION_REDUCED, createMotionScope } from '../../animations/motion-scope';
 
 /** Un grado de la escala. */
 interface HeatLevel {
@@ -181,9 +177,7 @@ export class HeatScale {
   constructor() {
     createMotionScope(this.root, (mm) => {
       const host = this.root().nativeElement;
-      const levelNodes = Array.from(
-        host.querySelectorAll<HTMLElement>('[data-anim="level"]'),
-      );
+      const levelNodes = Array.from(host.querySelectorAll<HTMLElement>('[data-anim="level"]'));
 
       mm.add(MOTION_OK, () => {
         const tl = gsap.timeline({
@@ -197,26 +191,34 @@ export class HeatScale {
             end: '+=400%',
             pin: true,
 
-            // AQUÍ ESTA SECCIÓN SE SEPARA DEL HERO, Y EL MOTIVO ES EL CONTENIDO
-            // QUIETO.
+            // `fixed`, y SIN `anticipatePin`. Es el mismo ajuste que el hero,
+            // y aquí fue donde se descubrió por qué hace falta.
             //
-            // El hero usa `pinType: 'transform'` y `anticipatePin: 1`. Los dos
-            // posicionan la sección desde JavaScript:
+            // Las alternativas posicionan la sección desde JavaScript:
             //
-            //   - `transform` mantiene la sección en su sitio con un translateY
-            //     que GSAP recalcula en cada evento de scroll. Chrome compone
-            //     el scroll de forma asíncrona, así que durante un frame la
+            //   - `transform` la mantiene en su sitio con un translateY que
+            //     GSAP recalcula en cada evento de scroll. Chrome compone el
+            //     scroll de forma asíncrona, así que durante un frame la
             //     sección está donde el compositor la dejó, no donde el JS la
             //     quiere.
             //   - `anticipatePin` adelanta el pin según la velocidad del
             //     scroll. Es una predicción, y cuando falla hay que corregirla.
             //
-            // Las dos cosas producen el mismo artefacto: la sección salta unos
-            // píxeles y vuelve. En el hero no se nota porque su contenido se
-            // mueve con el scroll (`yPercent`) y el temblor queda enmascarado
-            // dentro del movimiento. Aquí el texto está QUIETO durante todo el
-            // reposo de cada nivel, así que cualquier oscilación se ve desnuda:
-            // Pablo lo describió como que «el texto rebota».
+            // Las dos producen el mismo artefacto: la sección salta unos
+            // píxeles y vuelve. Aquí se vio desnudo porque el texto está QUIETO
+            // durante el reposo de cada nivel — Pablo lo describió como que «el
+            // texto rebota». UN PIN CON CONTENIDO QUIETO ES UN DETECTOR DE
+            // TEMBLOR; uno con contenido en movimiento lo esconde.
+            //
+            // Esa frase llevó a dejar el hero con `transform` tres fases más,
+            // y era cierta solo a medias: el movimiento enmascara el temblor
+            // CONTINUO del recorrido, no el salto del instante en que el pin se
+            // activa. El hero arranca en `top top`, así que ese instante es el
+            // primer movimiento de rueda y ahí no hay nada que lo tape. Desde
+            // la fase 7 las dos secciones pineadas usan `fixed` y ninguna lleva
+            // `anticipatePin`: no hay un ajuste para contenido quieto y otro
+            // para contenido en movimiento, hay uno que posiciona desde JS y
+            // otro que ancla el navegador.
             //
             // Con `fixed` ancla el navegador y no hay ningún valor que el JS
             // pueda tener desactualizado. Se paga un recálculo de layout al

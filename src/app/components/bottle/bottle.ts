@@ -8,11 +8,14 @@ import { Component, input } from '@angular/core';
  * salsa nueva no añade un archivo. Era la razón de elegir SVG sobre fotografía,
  * y cinco ficheros idénticos salvo un `fill` la habrían desperdiciado.
  *
- * Partes con `data-part` para poder animarlas por separado con GSAP:
- * `cap`, `glass`, `sauce`, `label`, `shine`.
- *
- * El trazo del contorno lleva `data-anim="outline"` para dibujarlo con
- * DrawSVGPlugin en la fase 5.
+ * Las partes van marcadas con `data-part` —`cap`, `glass`, `sauce`, `label`,
+ * `shine`— como puntos de anclaje por si alguna vez hay que animarlas por
+ * separado. **Hoy no las anima nadie**, y está dicho a propósito: el plan de la
+ * fase 5 preveía dibujar el contorno con `DrawSVGPlugin` y no se hizo —el
+ * plugin terminó usándose solo en la línea del proceso—, así que el
+ * `data-anim="outline"` que había aquí se retiró. En este proyecto `data-anim`
+ * significa «esto lo mueve GSAP», y un selector futuro que barra `[data-anim]`
+ * no debe encontrar elementos que nadie anima.
  */
 @Component({
   selector: 'app-bottle',

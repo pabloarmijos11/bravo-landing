@@ -56,10 +56,25 @@ Tres cosas que costaron en la fase 5 y que la referencia menciona de pasada:
 ## Comandos
 
 ```bash
-npm start          # servidor de desarrollo (localhost:4200)
-npm run build      # build de producción
-py -3 scripts/contraste.py   # verificar contraste de la paleta
+npm start              # servidor de desarrollo (localhost:4200)
+npm run build          # build de producción
+npm run format         # prettier sobre src/ (escribe)
+npm run format:check   # prettier sobre src/ (solo comprueba)
+
+py -3 scripts/contraste.py    # verificar contraste de la paleta
+py -3 scripts/generar-og.py   # regenerar public/og.jpg desde los tokens
 ```
+
+**El proyecto se formatea con Prettier y `format:check` está en verde.** Durante
+seis fases hubo `.prettierrc` y la dependencia instalada sin que nadie lo pasara
+nunca: 18 de los 26 archivos de `src/` fallaban la comprobación. Pasarlo luego
+costó un diff de 23 archivos que no cambia una sola línea de comportamiento, y es
+exactamente el tipo de deuda que crece sola. **Si se toca un archivo, se formatea.**
+
+Un efecto que conviene saber: **Prettier reindenta el HTML pero no el interior de
+los comentarios.** En `index.html`, que no estaba indentado dentro de `<html>`,
+los cierres `-->` quedaron desalineados y hubo que recolocarlos a mano. No los
+vuelve a tocar, así que el arreglo manual es estable.
 
 **Python se invoca con `py -3`**, nunca `python` ni `python3`: el alias de
 ejecución de la Microsoft Store los intercepta y falla con "Python was not found".
@@ -157,6 +172,14 @@ Medido en este proyecto, transferencia estimada del build de producción:
 | Signal Forms, el CTA (fase 5) | 106,14 kB | **+18,87 kB** |
 | `Draggable` + el carrusel (fase 6) | 118,95 kB | **+12,73 kB** |
 | `InertiaPlugin` (fase 6) | 121,30 kB | **+2,48 kB** |
+| Pulido y auditoría (fase 7) | 121,55 kB | +0,25 kB |
+| Revisión del 2026-10-16 | 121,76 kB | +0,21 kB |
+
+La última fila es `<main>`, el `aria-labelledby` de la escala, el filtro de
+`:focus-visible` del carrusel y las metas sociales. **La imagen `og.jpg` no cuenta
+aquí** —son 175 kB, veinte veces el margen que queda— porque no entra en el bundle:
+se sirve suelta desde `public/` y solo la descargan los rastreadores que generan la
+tarjeta al compartir el enlace. Ningún visitante la pide.
 
 **Signal Forms cuesta casi 19 kB, y eso el plan no lo había estimado.** Es, con
 diferencia, lo más caro añadido después de GSAP: un único campo de correo trae
@@ -178,6 +201,26 @@ Dos consecuencias prácticas de ese margen tan estrecho:
 
 Por eso `gsap-setup.ts` registra **solo lo que ya se usa**: cada plugin registrado
 entra en el bundle aunque no se ejecute.
+
+### El budget de `angular.json` vigila el umbral, pero en otra unidad
+
+Durante siete fases el budget se quedó en el que pone el CLI (`500kB` de aviso,
+`1MB` de error) mientras el umbral real del proyecto era 130 kB de transferencia.
+Es decir: **el control vivía en leer la tabla de arriba a mano**, y el build no
+habría dicho nada al pasarse.
+
+El problema para automatizarlo es que **los budgets de Angular miden el tamaño sin
+comprimir**, y no hay opción para medir el comprimido. Hoy 409,17 kB en bruto son
+121,76 kB transferidos: un factor de 3,36 que depende de lo comprimible que sea lo
+que se añada, así que la conversión es aproximada y no puede ser otra cosa.
+
+Valores puestos: **aviso en 430 kB, error en 445 kB** — unos 128 y 132 kB
+transferidos con el factor de hoy. El aviso salta antes de tocar el umbral y el
+error, justo después.
+
+Como JSON no admite comentarios, el porqué vive aquí, igual que el de `vercel.json`.
+**Si el factor se mueve mucho, hay que recalcular estos dos números**, no subirlos
+porque el build se quejó.
 
 ### Nombres de import de GSAP
 
@@ -282,12 +325,27 @@ está mirando.** Y mantenerlo durante la animación evita que GSAP vuelva a un
 transform 2D y el navegador descarte la capa.
 
 Verificado con `scrollY` en 0 y sin haber tocado la rueda: los cuatro elementos
-animados del hero ya llevan `translate3d` en su estilo inline.
+animados del hero ya llevan `translate3d` en su estilo inline. Y verificado otra vez
+**durante** la animación, con el pin activo, que es la otra mitad de la promesa.
+
+**Pero hay que mirarlo en el sitio correcto, y es fácil equivocarse.** Con el titular
+animándose, `getComputedStyle(el).transform` devuelve
+`matrix(1.0325, 0, 0, 1.0325, 0, -55.89)` — una matriz **2D**, que parece decir que
+GSAP ha vuelto a un transform plano y que el navegador puede descartar la capa.
+
+Es un falso negativo: **el navegador colapsa la matriz a su forma 2D cuando la
+componente Z es 0**, y `translate3d(0,0,0)` tiene Z 0 por definición. Lo que hay que
+leer es el **estilo inline**, que es donde escribe GSAP:
+
+```js
+el.style.transform   // "translate(0%, -7.58%) translate3d(0px, 0px, 0px) scale(1.03, 1.03)"
+```
 
 **La lección general:** `will-change: transform` no garantiza nada. Si la capa es
 grande —y en este proyecto los titulares son enormes por diseño— hay que forzar
 la promoción con un transform 3D real y comprobar que está puesta, en vez de
-suponer que la sugerencia se atendió.
+suponer que la sugerencia se atendió. Y comprobarlo en el estilo inline, no en el
+computado.
 
 ### Diagnóstico: distinguir latencia de falta de frames
 
@@ -455,6 +513,27 @@ zona desplazable que no se puede enfocar no se puede recorrer con el teclado.
 **No se mezcla con `overflow-x: auto`.** Serían dos mecanismos de desplazamiento
 compitiendo por el mismo gesto — el defecto que el proyecto se negó a copiar de la
 referencia con sus dos motores de smooth scroll.
+
+**Y ese arreglo necesita a su vez un filtro: solo el foco del teclado debe mover el
+carril.** Tal cual se escribió en la fase 6, `(focus)` disparaba el desplazamiento
+viniera de donde viniera. En escritorio no se notaba, y la razón es sutil:
+`Draggable` llama a `preventDefault()` en el press, así que el clic nunca llega a
+enfocar la tarjeta —su `_isClickable()` solo exceptúa `<a>`, `<input>`, `<button>` y
+`data-clickable`, y esto es un `<li tabindex="0">`—. **Pero en táctil
+`allowNativeTouchScrolling` impide ese `preventDefault` a propósito**, que es
+justamente lo que deja al dedo hacer scroll vertical. Ahí el toque sí puede enfocar,
+y el carrusel daría un salto cuando el usuario solo quería mirar.
+
+```ts
+if (!(event.target as HTMLElement).matches(':focus-visible')) return;
+```
+
+El navegador ya sabe distinguir las dos cosas —`:focus-visible` se aplica al tabular
+y no al pulsar con un puntero— así que no hay que reimplementarlo. El anillo de foco
+usaba ese criterio desde el principio; esto lo lleva también al comportamiento.
+
+**La regla general:** cuando el foco dispara un movimiento y no solo un estilo, la
+condición no es «¿tiene el foco?» sino **«¿se lo dio el teclado?»**.
 
 ### El callback de `mm.add()` puede devolver su limpieza
 
@@ -655,19 +734,49 @@ verificación de tokens.
 
 ```
 src/
-├─ index.html                     tipografías de Google Fonts con doble preconnect
+├─ index.html                     tipografías, metas sociales y canonical
 ├─ styles.css                     @theme con tokens + grano de papel + text-worn
 └─ app/
-   ├─ app.html                    apila las secciones en orden
+   ├─ app.html                    <main> con las 6 secciones; el pie va fuera
    ├─ components/
    │  └─ hero/ origin/ heat-scale/ products/ process/ cta/ site-footer/
    │     products/                carrusel arrastrable; bottle/ es su ilustración
-   ├─ animations/
-   │  ├─ gsap-setup.ts            registro de plugins, una sola vez
-   │  └─ motion-scope.ts          gsap.context + matchMedia + DestroyRef
-   └─ assets/bottles/             los 5 SVG de botella
-scripts/contraste.py              verificación WCAG de la paleta
+   └─ animations/
+      ├─ gsap-setup.ts            registro de plugins, una sola vez
+      └─ motion-scope.ts          gsap.matchMedia + scope + DestroyRef
+public/
+├─ favicon.ico
+├─ textura-titular.png            la máscara de `text-worn`
+└─ og.jpg                         previsualización al compartir el enlace
+scripts/
+├─ contraste.py                   verificación WCAG de la paleta
+├─ generar-textura.py             genera textura-titular.png
+└─ generar-og.py                  genera og.jpg desde los tokens de styles.css
 ```
+
+**Hay un solo componente de botella, no cinco SVG.** Este árbol decía
+`assets/bottles/ — los 5 SVG de botella`, que nunca existió: `bottle/` es un
+componente único y el color entra por `[fill]`. Era precisamente la decisión
+registrada más abajo («añadir una salsa no añade un archivo»), contada al revés.
+
+### Los landmarks: `<main>` faltaba desde la fase 1
+
+`app.html` apilaba las secciones directamente bajo `app-root`, que no es nada a
+efectos semánticos. El pie ya aportaba su `contentinfo` y su `<nav>` etiquetado, así
+que el único que faltaba era el principal — y sin él, la única forma de recorrer la
+página con un lector de pantalla es ir encabezado por encabezado.
+
+**No lo detectó nada en siete fases**, y es el punto interesante: el checklist de
+`quick-reference.md` cazó el `cursor: default` de los botones y los 23 px de los
+enlaces del pie, pero la estructura de landmarks no estaba en lo que se miró. Lo que
+sí hay que mirar: un `<main>`, y que cada `<section>` que alguien pueda enlazar
+tenga nombre accesible.
+
+De ahí sale el segundo arreglo. **La escala era la única sección sin nombre**: sus
+cinco `<h2>` son los nombres de los ajíes, uno por nivel, así que no quedaba ninguno
+para titular el conjunto y el enlace «Escala» del pie aterrizaba en una región
+anónima. Se resolvió apuntando `aria-labelledby` al eyebrow que ya estaba ahí, en
+vez de añadir un encabezado que competiría con los cinco en una pantalla sin sitio.
 
 ## Qué se conserva de la referencia (`royalbev.com`)
 
@@ -859,9 +968,9 @@ El sitio es **estático**: `ng build` sin `outputMode`, salida en
 `dist/bravo-landing/browser`, que es justo lo que espera el preset de Angular en
 Vercel. No hay SSR, ni backend, ni variables de entorno.
 
-**Lo que se publica son cinco archivos** —`index.html`, el JS, el CSS, el favicon y
-la textura—: el `CLAUDE.md`, la auditoría, los scripts y el sistema de diseño se
-quedan en el repositorio. Verificado además que el build **no emite source maps** y
+**Lo que se publica son seis archivos** —`index.html`, el JS, el CSS, el favicon, la
+textura y `og.jpg`—: el `CLAUDE.md`, la auditoría, los scripts y el sistema de diseño
+se quedan en el repositorio. Verificado además que el build **no emite source maps** y
 que los comentarios largos del código **no sobreviven al minificado**, así que todo
 el razonamiento documentado aquí no viaja al navegador de nadie.
 
@@ -880,6 +989,17 @@ el porqué de cada directiva va aquí:
 **Si se añade una fuente externa, una imagen remota o una llamada a una API, hay que
 tocar esta política o fallará en silencio** — el navegador bloquea y lo dice solo en
 consola. Es el precio de tener CSP, y es un precio que vale la pena.
+
+**La `og:image` es la excepción, y conviene no confundirse:** `img-src 'self' data:`
+no la afecta porque esa imagen no la pide el navegador de nadie. La descarga el
+rastreador de WhatsApp, Slack o quien sea, desde su propio servidor, al generar la
+tarjeta del enlace. La CSP solo gobierna lo que carga la página.
+
+**Lo que sí hay que recordar de esas metas: sus URL son absolutas y llevan el dominio
+escrito.** No hay alternativa —un rastreador no resuelve rutas relativas— así que
+**si el dominio cambia hay cuatro sitios que tocar en `index.html`**: `canonical`,
+`og:url`, `og:image` y `twitter:image`. Es el único punto del proyecto donde el
+dominio de producción aparece en el código.
 
 ### El CSS crítico de Angular es incompatible con esta CSP
 
@@ -1221,5 +1341,55 @@ deja ver uno.
       deliberadas del proyecto (el pin largo, los 18,87 kB de Signal Forms, el
       scroll cinematográfico como marcador de época); están anotadas como tales
       y la decisión de actuar sobre ellas es de Pablo.
+
+- [x] **Revisión del 2026-10-16** — repaso completo del proyecto ya cerrado, en busca
+      de errores y huecos. Salieron diez cosas, ninguna de ellas un fallo de
+      comportamiento: cuatro comentarios del código que habían dejado de ser ciertos
+      —el más grave, `heat-scale.ts` explicando durante 30 líneas en qué se
+      diferenciaba del hero cuando desde la fase 7 usan el mismo `pinType`—, el
+      `assets/bottles/` inventado de este mismo archivo, el `<main>` que faltaba
+      desde la fase 1, la escala sin nombre accesible, las metas sociales ausentes,
+      el `(focus)` del carrusel sin filtro de `:focus-visible`, `@angular/router`
+      instalado sin usarse, Prettier sin pasar y los budgets sin vigilar nada.
+      Todo corregido y documentado arriba, en el apartado que le toca a cada uno.
+
+      Medido después: **121,76 kB** de 130, `ng build` limpio, `format:check` en
+      verde y los pares de contraste sin cambios.
+
+      Verificado **en Chrome**, porque dos de los cambios tocan cosas que podrían
+      romperse en silencio:
+
+      - **El `<main>` no afecta a los pines.** `main` sin transform, los **2
+        `pin-spacer` dentro de él**, el pie fuera, 0 scroll horizontal. Con scroll
+        real: el hero `position: fixed` en `top: 0` con el titular ya desplazado, y
+        la escala en su nivel 2 con el amarillo `heat-2` y un solo bloque visible.
+      - **El filtro de `:focus-visible` no rompió el arreglo de la fase 6**, que era
+        el riesgo de verdad. Seis tabulaciones reales desde «siguiente» llevan el
+        foco a «5 de 5: Habanera», el carrusel va al tope (−704 px, «3–5 de 5») y la
+        tarjeta queda dentro del viewport. `Home` devuelve a «1–3 de 5». Y un clic
+        sobre una tarjeta **no mueve el carril ni se lleva el foco**, que es la otra
+        mitad de lo que se quería.
+
+      Sin errores en consola; sigue el *warning* de `DrawSVGPlugin` de la fase 5.
+
+      **Lo táctil sigue sin verificar**, y es justo donde vive el motivo del filtro:
+      `allowNativeTouchScrolling` solo quita el `preventDefault` en táctil, así que
+      el escenario que esto previene —un toque que enfoca y mueve el carrusel— no se
+      reproduce con ratón.
+
+      **La lección de método:** el proyecto verifica muy bien lo que mide —contraste
+      por cálculo, pesos por build, FPS por deltas de frame— y los diez hallazgos
+      caen justo fuera de eso. Cuatro son prosa que envejeció al cambiar el código
+      que describía, y los demás son cosas que ninguna comprobación miraba: no hay
+      nada que falle cuando falta un `<main>`. **Lo que no se mide, envejece en
+      silencio**, y los comentarios largos de este proyecto son su mayor activo y
+      por lo mismo su mayor superficie de error.
+
+      **Pendiente, y no se tocó a propósito:** `npm audit` da 5 vulnerabilidades
+      (3 altas, 2 críticas) en `@angular/build` → `piscina` y en
+      `http-cache-semantics`. Son todas de `devDependencies`: no entran en el bundle
+      ni afectan al sitio publicado, solo a la cadena de build local. `npm audit fix`
+      las resuelve, pero mueve versiones del CLI y eso se hace a conciencia y con un
+      build de comprobación detrás, no de paso en una revisión.
 
 Plan por fases completo en `~/.claude/plans/bravo-landing-fases.md`.

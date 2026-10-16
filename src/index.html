@@ -1,30 +1,84 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Bravo — Salsas picantes artesanales</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description"
-        content="Bravo: salsas picantes artesanales hechas con ajíes ecuatorianos. Cinco niveles, del criollo al extremo.">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bravo — Salsas picantes artesanales</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      «Del ají dulce al habanero», no «del criollo al extremo»: el criollo es el
+      nivel 2, no el primero, y «extremo» es el superlativo sin respaldo que la
+      regla de copy del proyecto no admite. Los dos extremos de la escala tienen
+      nombre, así que se dicen.
+    -->
+    <meta
+      name="description"
+      content="Bravo: salsas picantes artesanales hechas con ajíes ecuatorianos. Cinco grados, del ají dulce al habanero."
+    />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="canonical" href="https://bravo-landing-nine.vercel.app/" />
 
-  <!--
-    Tipografías: los tres niveles del sistema de diseño.
-    Anton (titulares) · Caveat (eyebrows) · Outfit (cuerpo)
+    <!-- El color de la barra del navegador en móvil, igual que el fondo. -->
+    <meta name="theme-color" content="#ede9df" />
 
-    `preconnect` a los dos dominios, no solo a uno: fonts.googleapis.com sirve
-    el CSS y fonts.gstatic.com los ficheros de fuente. Sin el segundo, el
-    navegador abre la conexión al gstatic solo después de parsear el CSS.
-    `crossorigin` es obligatorio en ese segundo preconnect o el navegador lo
-    descarta en silencio.
-  -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@400..700&family=Outfit:wght@100..900&display=swap">
-</head>
-<body>
-  <app-root></app-root>
-</body>
+    <!--
+      TARJETA DE PREVISUALIZACIÓN AL COMPARTIR EL ENLACE.
+
+      Sin esto, el enlace se pega en un chat como una URL desnuda: ni título, ni
+      descripción, ni imagen. Es lo único de este archivo que no se ve abriendo
+      la página, y por eso se había quedado fuera hasta ahora.
+
+      Las URL son ABSOLUTAS por obligación: quien lee estas metas es un
+      rastreador que no tiene la página como base, así que una ruta relativa no
+      resuelve.
+
+      `og.jpg` lo genera `py -3 scripts/generar-og.py` a partir de los tokens de
+      styles.css. La CSP no interviene aquí: esa imagen la descarga el
+      rastreador desde su propio servidor, no el navegador de quien visita.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bravo" />
+    <meta property="og:locale" content="es_EC" />
+    <meta property="og:url" content="https://bravo-landing-nine.vercel.app/" />
+    <meta property="og:title" content="Bravo — Salsas picantes artesanales" />
+    <meta
+      property="og:description"
+      content="Cinco grados de calor, del ají dulce al habanero. Marca ficticia: es un proyecto para practicar scroll cinematográfico con GSAP."
+    />
+    <meta property="og:image" content="https://bravo-landing-nine.vercel.app/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="El nombre Bravo en tipografía condensada sobre fondo color hueso, con los cinco colores de la escala de picante debajo."
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bravo — Salsas picantes artesanales" />
+    <meta
+      name="twitter:description"
+      content="Cinco grados de calor, del ají dulce al habanero. Marca ficticia: es un proyecto para practicar scroll cinematográfico con GSAP."
+    />
+    <meta name="twitter:image" content="https://bravo-landing-nine.vercel.app/og.jpg" />
+
+    <!--
+      Tipografías: los tres niveles del sistema de diseño.
+      Anton (titulares) · Caveat (eyebrows) · Outfit (cuerpo)
+
+      `preconnect` a los dos dominios, no solo a uno: fonts.googleapis.com sirve
+      el CSS y fonts.gstatic.com los ficheros de fuente. Sin el segundo, el
+      navegador abre la conexión al gstatic solo después de parsear el CSS.
+      `crossorigin` es obligatorio en ese segundo preconnect o el navegador lo
+      descarta en silencio.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@400..700&family=Outfit:wght@100..900&display=swap"
+    />
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
 </html>

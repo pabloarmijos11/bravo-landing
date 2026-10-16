@@ -9,10 +9,7 @@
   `pin-spacer` al activar el `pin`, y un margen ahí produce un salto visible
   justo cuando la sección se fija.
 -->
-<section
-  #root
-  class="relative flex h-screen items-center justify-center overflow-hidden bg-bone"
->
+<section #root class="relative flex h-screen items-center justify-center overflow-hidden bg-bone">
   <!--
     Eyebrow, esquina superior izquierda.
 
@@ -43,14 +40,14 @@
     El tamaño va en `vw` y no en píxeles para que la proporción respecto a la
     pantalla sea la misma en cualquier ancho.
 
-    42vw, no 28vw. Con 28vw la palabra cabía entera en el viewport y el efecto
+    48vw, no 28vw. Con 28vw la palabra cabía entera en el viewport y el efecto
     de la referencia —el titular cortado por los dos lados— no se producía en
     NINGÚN tamaño de pantalla, porque al escalar con `vw` la proporción
     texto/viewport es constante: agrandar la ventana no lo arregla.
 
     El número se ajustó midiendo, no estimando: con 42vw el titular medía 1467
     px en un viewport de 1521 — llenaba casi todo pero seguía sin cortarse.
-    48vw lo desborda unos 75 px por lado, que es cuando el efecto se lee.
+    48vw da 1677 px y lo desborda 78 px por lado, que es cuando el efecto se lee.
 
     El `overflow-hidden` del <section> es lo que hace esto seguro: recorta el
     desbordamiento sin generar scroll horizontal.
@@ -67,10 +64,7 @@
     resuelve en el compositor. `will-change: transform` le dice al navegador que
     promueva el wrapper a su propia capa desde el principio.
   -->
-  <div
-    data-anim="title"
-    class="pointer-events-none select-none [will-change:transform]"
-  >
+  <div data-anim="title" class="pointer-events-none select-none [will-change:transform]">
     <!--
       `translateZ(0)` en el elemento ENMASCARADO, no en el que se anima: lo
       promueve a su propia capa de composición, de modo que la máscara se

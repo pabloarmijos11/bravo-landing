@@ -53,10 +53,9 @@
     <ellipse data-part="sauce-shadow" cx="100" cy="462" rx="70" ry="20" fill="#000" opacity="0.2" />
   </g>
 
-  <!-- Contorno del cristal. `data-anim="outline"` para DrawSVG en la fase 5. -->
+  <!-- Contorno del cristal. -->
   <path
     data-part="glass"
-    data-anim="outline"
     d="M78 62 L78 118 Q78 130 68 140 Q38 165 35 205 L35 435
        Q35 462 62 462 L138 462 Q165 462 165 435 L165 205
        Q162 165 132 140 Q122 130 122 118 L122 62 Z"
@@ -66,31 +65,19 @@
   />
 
   <!-- Reflejo: encima del contenido, debajo de la etiqueta. -->
-  <rect
-    data-part="shine"
-    x="50"
-    y="195"
-    width="16"
-    height="230"
-    rx="8"
-    fill="url(#bottle-shine)"
-  />
+  <rect data-part="shine" x="50" y="195" width="16" height="230" rx="8" fill="url(#bottle-shine)" />
 
   <!-- Tapa. Del mismo tono que el contenido, para que la salsa se lea de lejos. -->
   <g data-part="cap">
     <rect x="68" y="8" width="64" height="56" rx="7" [attr.fill]="'var(--bottle-fill)'" />
-    <rect
-      x="68"
-      y="8"
-      width="64"
-      height="56"
-      rx="7"
-      stroke="var(--color-ink)"
-      stroke-width="7"
-    />
+    <rect x="68" y="8" width="64" height="56" rx="7" stroke="var(--color-ink)" stroke-width="7" />
     <!-- Estrías de la rosca: tres líneas bastan para leerse como tapa. -->
-    <path d="M82 22 L82 50 M100 22 L100 50 M118 22 L118 50"
-          stroke="var(--color-ink)" stroke-width="4" opacity="0.4" />
+    <path
+      d="M82 22 L82 50 M100 22 L100 50 M118 22 L118 50"
+      stroke="var(--color-ink)"
+      stroke-width="4"
+      opacity="0.4"
+    />
   </g>
 
   <!-- Etiqueta, en el color de fondo de la página para que recorte el contenido. -->
