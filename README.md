@@ -20,7 +20,8 @@ ambición que en proyectos anteriores.
 
 - Node 24.14.1 o superior
 - npm 11.11.0 o superior
-- Python 3 (opcional, solo para el script de contraste)
+- Python 3 (opcional, solo para los scripts de `scripts/`). El generador de la
+  imagen social necesita además Pillow; los otros dos no tienen dependencias.
 
 ## Cómo ejecutarlo
 
